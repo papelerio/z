@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenWriter Cloud - Fast Sync</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg: #1a1a1a; --surface: #242424; --text-main: #d1d1d1;
+            --text-dim: #888; --accent: #4a9eff; --danger: #ff5555;
+            --success: #2ecc71; --border: #333; --warning: #f1c40f;
+        }
+
+        body { font-family: serif; margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.8; }
+        .view { display: none; padding: 20px; max-width: 850px; margin: auto; box-sizing: border-box; }
+        .active { display: block; }
+
+        /* STATUS BAR */
+        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        #btn-connect { padding: 8px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
+        .offline { background: var(--danger); color: white; }
+        .online { background: var(--success); color: white; }
+
+        /* LOBBY */
+        .note-card { padding: 20px; background: var(--surface); border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
+        .sync-warn { color: var(--warning); font-size: 0.8rem; margin-left: 10px; }
+        .card-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-sm { font-size: 0.8rem; padding: 6px 12px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; border-radius: 4px; }
+        .btn-sm:disabled { opacity: 0.2; }
+
+        /* MODALES */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; }
+        .modal-content { background: var(--surface); margin: 5% auto; padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; border: 1px solid var(--border); }
+        
+        .conflict-box { background: #111; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid transparent; cursor: pointer; }
+        .recommended-border { border-color: var(--warning) !important; }
+        
+        .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-bottom: 5px; display: inline-block; }
+        .tag-cloud { background: var(--accent); color: white; }
+        .tag-local { background: var(--text-dim); color: white; }
+        .tag-rec { color: var(--warning); font-weight: bold; margin-left: 10px; }
+
+        /* BOTONES */
+        .btn-fast { background: var(--warning); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
+        .fab { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+
+        .editor-input { width: 100%; border: none; outline: none; background: transparent; color: var(--text-main); font-family: inherit; }
+        #edit-title { font-size: 2rem; color: #fff; margin-bottom: 20px; }
+        #edit-content { font-size: 1.2rem; min-height: 65vh; resize: none; }
+    </style>
+</head>
+<body>
+
+    <div id="view-lobby" class="view active">
+        <div class="status-bar">
+            <h2 style="margin:0">ZenWriter Cloud</h2>
+            <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
+        </div>
+        <div id="notes-list"></div>
+        <button class="fab" onclick="createNewNote()">+</button>
+    </div>
+
+    <div id="view-read" class="view">
+        <button class="btn" onclick="showLobby()">← Volver</button>
+        <button class="btn" onclick="editCurrentNote()">Editar</button>
+        <h1 id="read-title" style="margin-top:30px"></h1>
+        <div id="read-summary" style="font-style: italic; color: var(--text-dim); margin-bottom: 20px;"></div>
+        <div id="read-content" style="white-space: pre-wrap;"></div>
+    </div>
+
+    <div id="view-edit" class="view">
+        <nav style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+            <button class="btn" style="color: var(--accent);" onclick="saveNote()">✔ Guardar</button>
+            <button class="btn" onclick="toggleModal('modal-summary', true)">Resumen</button>
+        </nav>
+        <input type="text" id="edit-title" class="editor-input" placeholder="Título...">
+        <textarea id="edit-content" class="editor-input" placeholder="Escribe tu historia..."></textarea>
+    </div>
+
+    <div id="modal-conflict" class="modal">
+        <div class="modal-content">
+            <h2 style="color:var(--warning); margin-top:0;">Conflictos Detectados</h2>
+            <p id="conflict-count" style="font-size: 0.9rem;"></p>
+            
+            <button class="btn-fast" onclick="resolveAllRecommended()">⏩ USAR RECOMENDADA EN TODO</button>
+            
+            <div style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <p style="font-size: 0.8rem; color: var(--text-dim);">O evalúa esta nota manualmente:</p>
+                <h3 id="conflict-note-title" style="color:#fff; margin-bottom:10px;"></h3>
+                
+                <div id="option-cloud" class="conflict-box">
+                    <span class="tag tag-cloud">En la Nube</span> <span id="rec-cloud" class="tag-rec"></span>
+                    <div id="cloud-date" style="font-weight:bold;"></div>
+                    <div id="cloud-preview" style="font-size:0.8rem; color:var(--text-dim); margin-top:5px;"></div>
+                </div>
+
+                <div id="option-local" class="conflict-box">
+                    <span class="tag tag-local">Este Dispositivo</span> <span id="rec-local" class="tag-rec"></span>
+                    <div id="local-date" style="font-weight:bold;"></div>
+                    <div id="local-preview" style="font-size:0.8rem; color:var(--text-dim); margin-top:5px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-summary" class="modal">
+        <div class="modal-content">
+            <h3>Resumen</h3>
+            <textarea id="edit-summary" class="editor-input" style="height:150px; background: #111; padding:10px;"></textarea>
+            <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-summary', false)">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqZqKDGk0i6vT33XsKeyFRWDHQvc48MQ0",
+            authDomain: "zenwriter-67a82.firebaseapp.com",
+            databaseURL: "https://zenwriter-67a82-default-rtdb.firebaseio.com",
+            projectId: "zenwriter-67a82",
+            storageBucket: "zenwriter-67a82.firebasestorage.app",
+            messagingSenderId: "1091280994327",
+            appId: "1:1091280994327:web:46d41ca0e3d77dcdb1dc52"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let notes = JSON.parse(localStorage.getItem('zen_v3')) || [];
+        let isOnline = false;
+        let currentNoteIndex = null;
+        let conflictsQueue = []; // Cola de notas con conflicto
+
+        function tryConnect() {
+            if (navigator.onLine) {
+                isOnline = true;
+                const btn = document.getElementById('btn-connect');
+                btn.innerText = "En Línea"; btn.className = "online";
+                syncProcess();
+            } else { alert("Sin conexión."); }
+        }
+
+        async function syncProcess() {
+            if (!isOnline) return;
+            conflictsQueue = [];
+            const snapshot = await db.ref('notes').once('value');
+            const cloudNotes = snapshot.val() || {};
+
+            for (const id in cloudNotes) {
+                const cloudNote = cloudNotes[id];
+                const localIdx = notes.findIndex(n => n.id === id);
+                if (localIdx === -1) {
+                    notes.push(cloudNote);
+                } else {
+                    if (cloudNote.timestamp !== notes[localIdx].timestamp) {
+                        conflictsQueue.push({ localIdx, cloudNote });
+                    }
+                }
+            }
+
+            if (conflictsQueue.length > 0) {
+                showNextConflict();
+            } else {
+                finishSync();
+            }
+        }
+
+        function showNextConflict() {
+            if (conflictsQueue.length === 0) {
+                toggleModal('modal-conflict', false);
+                finishSync();
+                return;
+            }
+
+            const { localIdx, cloudNote } = conflictsQueue[0];
+            const localNote = notes[localIdx];
+            
+            document.getElementById('conflict-count').innerText = `Tienes ${conflictsQueue.length} notas con versiones distintas.`;
+            document.getElementById('conflict-note-title').innerText = localNote.title;
+            
+            // UI Recomendación
+            const isCloudNewer = cloudNote.timestamp > localNote.timestamp;
+            document.getElementById('rec-cloud').innerText = isCloudNewer ? "★ RECOMENDADA" : "";
+            document.getElementById('option-cloud').className = isCloudNewer ? "conflict-box recommended-border" : "conflict-box";
+            document.getElementById('rec-local').innerText = !isCloudNewer ? "★ RECOMENDADA" : "";
+            document.getElementById('option-local').className = !isCloudNewer ? "conflict-box recommended-border" : "conflict-box";
+
+            document.getElementById('cloud-date').innerText = cloudNote.date;
+            document.getElementById('cloud-preview').innerText = cloudNote.content.substring(0, 50) + "...";
+            document.getElementById('local-date').innerText = localNote.date;
+            document.getElementById('local-preview').innerText = localNote.content.substring(0, 50) + "...";
+
+            document.getElementById('option-cloud').onclick = () => resolveManual('cloud');
+            document.getElementById('option-local').onclick = () => resolveManual('local');
+            
+            toggleModal('modal-conflict', true);
+        }
+
+        async function resolveManual(choice) {
+            const { localIdx, cloudNote } = conflictsQueue.shift();
+            if (choice === 'cloud') {
+                notes[localIdx] = cloudNote;
+                notes[localIdx].synced = true;
+            } else {
+                notes[localIdx].synced = false;
+            }
+            saveToLocal();
+            showNextConflict();
+        }
+
+        async function resolveAllRecommended() {
+            while (conflictsQueue.length > 0) {
+                const { localIdx, cloudNote } = conflictsQueue.shift();
+                const localNote = notes[localIdx];
+                if (cloudNote.timestamp > localNote.timestamp) {
+                    notes[localIdx] = cloudNote;
+                    notes[localIdx].synced = true;
+                } else {
+                    notes[localIdx].synced = false;
+                }
+            }
+            toggleModal('modal-conflict', false);
+            saveToLocal();
+            finishSync();
+        }
+
+        async function finishSync() {
+            for (let i = 0; i < notes.length; i++) {
+                if (!notes[i].synced) {
+                    notes[i].synced = true;
+                    await db.ref('notes/' + notes[i].id).set(notes[i]);
+                }
+            }
+            saveAndRender();
+        }
+
+        function saveNote() {
+            const now = new Date();
+            const id = currentNoteIndex !== null ? notes[currentNoteIndex].id : "ID_" + Date.now();
+            const noteData = {
+                id, title: document.getElementById('edit-title').value || 'Sin título',
+                content: document.getElementById('edit-content').value,
+                summary: document.getElementById('edit-summary').value,
+                date: now.toLocaleString(), timestamp: now.getTime(), synced: false
+            };
+            if (currentNoteIndex === null) notes.unshift(noteData);
+            else notes[currentNoteIndex] = noteData;
+            saveToLocal();
+            if (isOnline) finishSync();
+            showLobby();
+        }
+
+        async function deleteNote(index) {
+            if (!isOnline) return;
+            if (confirm("¿Borrar de la nube?")) {
+                await db.ref('notes/' + notes[index].id).remove();
+                notes.splice(index, 1);
+                saveAndRender();
+            }
+        }
+
+        function saveToLocal() { localStorage.setItem('zen_v3', JSON.stringify(notes)); }
+        function saveAndRender() { saveToLocal(); renderNotes(); }
+        function toggleModal(id, s) { document.getElementById(id).style.display = s?'block':'none'; }
+        function showView(id) { 
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function showLobby() { renderNotes(); showView('view-lobby'); }
+        function renderNotes() {
+            const list = document.getElementById('notes-list');
+            list.innerHTML = '';
+            notes.sort((a,b) => b.timestamp - a.timestamp);
+            notes.forEach((n, i) => {
+                const div = document.createElement('div');
+                div.className = 'note-card';
+                div.innerHTML = `<div onclick="openNote(${i})" style="cursor:pointer">
+                    <h3>${n.title} ${n.synced ? '' : '<span class="sync-warn">⚠️ Local</span>'}</h3>
+                    <small>${n.date}</small></div>
+                    <div class="card-actions">
+                    <button class="btn-sm" onclick="copyNote(${i})">Copiar</button>
+                    <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${i})">Borrar</button></div>`;
+                list.appendChild(div);
+            });
+        }
+        function copyNote(i) { navigator.clipboard.writeText(notes[i].title + "\n" + notes[i].content); alert("Copiado."); }
+        function createNewNote() { currentNoteIndex = null; document.getElementById('edit-title').value=''; document.getElementById('edit-content').value=''; document.getElementById('edit-summary').value=''; showView('view-edit'); }
+        function openNote(i) { currentNoteIndex = i; const n = notes[i]; document.getElementById('read-title').innerText = n.title; document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; document.getElementById('read-content').innerText = n.content; showView('view-read'); }
+        function editCurrentNote() { const n = notes[currentNoteIndex]; document.getElementById('edit-title').value = n.title; document.getElementById('edit-content').value = n.content; document.getElementById('edit-summary').value = n.summary; showView('view-edit'); }
+        renderNotes();
+    </script>
+</body>
+</html>
