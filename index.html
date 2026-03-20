@@ -75,6 +75,7 @@
         #btn-connect { padding: 8px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
         .offline { background: var(--danger); color: white; }
         .online { background: var(--success); color: white; }
+        .syncing { background: var(--warning); color: black; }
         
         .btn-icon {
             background: var(--surface);
@@ -478,12 +479,12 @@
         
         let notes = JSON.parse(localStorage.getItem('zen_v3')) || [];
         
-        // Clases predefinidas
+        // Clases locales
         let classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
         let currentClass = localStorage.getItem('zen_current_class') || 'tareas';
         
         // Configuración
-        let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false'; // true por defecto
+        let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false';
         let noteSize = localStorage.getItem('zen_note_size') || 'medium';
         
         let isOnline = false;
@@ -495,17 +496,14 @@
 
         // Aplicar configuración inicial
         function applySettings() {
-            // Modo copia
             const copyBtn = document.getElementById('btn-copy-mode');
             if (copyBtn) {
                 copyBtn.innerText = copyWithTitle ? '📋 Copiar + título' : '📋 Copiar - título';
                 copyBtn.title = copyWithTitle ? 'Modo copia: incluye título' : 'Modo copia: solo contenido';
             }
             
-            // Tamaño de viñetas - CORREGIDO: aplicar clase al body
             document.body.className = `size-${noteSize}`;
             
-            // Marcar opción activa en modal
             ['large', 'medium', 'compact'].forEach(size => {
                 const el = document.getElementById(`size-${size}`);
                 if (el) {
@@ -515,14 +513,12 @@
             });
         }
 
-        // Toggle modo copia
         function toggleCopyMode() {
             copyWithTitle = !copyWithTitle;
             localStorage.setItem('zen_copy_mode', copyWithTitle);
             applySettings();
         }
 
-        // Cambiar tamaño de viñetas - CORREGIDO
         function setNoteSize(size) {
             noteSize = size;
             localStorage.setItem('zen_note_size', size);
@@ -530,11 +526,75 @@
             toggleModal('modal-size', false);
         }
 
-        // Guardar clases
+        // Guardar clases localmente
         function saveClasses() {
             localStorage.setItem('zen_classes', JSON.stringify(classes));
             localStorage.setItem('zen_current_class', currentClass);
             renderClasses();
+        }
+
+        // Subir clases a la nube
+        async function uploadClassesToCloud() {
+            if (!isOnline) return;
+            await db.ref('metadata/classes').set({
+                list: classes,
+                timestamp: Date.now()
+            });
+        }
+
+        // Sincronizar clases desde la nube
+        async function syncClassesFromCloud() {
+            if (!isOnline) return;
+            
+            try {
+                const snapshot = await db.ref('metadata/classes').once('value');
+                const cloudClassesData = snapshot.val();
+                
+                if (cloudClassesData && cloudClassesData.list) {
+                    const cloudClasses = cloudClassesData.list;
+                    
+                    // Verificar si hay clases nuevas en la nube
+                    const newClasses = cloudClasses.filter(c => !classes.includes(c));
+                    
+                    // Verificar si hay clases en diferente orden
+                    const sameOrder = JSON.stringify(classes) === JSON.stringify(cloudClasses);
+                    
+                    if (newClasses.length > 0 || !sameOrder) {
+                        // Preguntar al usuario qué hacer
+                        const action = confirm(
+                            `Se detectaron cambios en las clases de la nube.\n\n` +
+                            `Nubes: ${cloudClasses.join(', ')}\n` +
+                            `Local: ${classes.join(', ')}\n\n` +
+                            `¿Usar la configuración de la nube? (Aceptar = usar nube, Cancelar = mantener local)`
+                        );
+                        
+                        if (action) {
+                            // Usar clases de la nube
+                            classes = [...cloudClasses];
+                            saveClasses();
+                            renderClassesList();
+                            renderClasses();
+                            
+                            // Asegurar que la clase actual existe
+                            if (!classes.includes(currentClass)) {
+                                currentClass = classes[0];
+                                saveClasses();
+                            }
+                            
+                            alert('Clases actualizadas desde la nube');
+                        } else {
+                            // Mantener clases locales y subirlas a la nube
+                            await uploadClassesToCloud();
+                            alert('Tus clases locales se han subido a la nube');
+                        }
+                    }
+                } else {
+                    // No hay clases en la nube, subir las locales
+                    await uploadClassesToCloud();
+                }
+            } catch (error) {
+                console.error('Error sincronizando clases:', error);
+            }
         }
 
         // Renderizar barra de clases
@@ -544,26 +604,22 @@
             
             let html = '';
             
-            // Botones para cada clase (respetando el orden guardado)
             classes.forEach(cls => {
                 html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls}')">${cls}</button>`;
             });
             
-            // Botón para gestionar clases
             html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
             
             bar.innerHTML = html;
         }
 
-        // Seleccionar clase
         function selectClass(cls) {
             currentClass = cls;
             saveClasses();
             renderNotes();
         }
 
-        // Añadir nueva clase
-        function addNewClass() {
+        async function addNewClass() {
             const input = document.getElementById('new-class-name');
             const newClass = input.value.trim().toLowerCase();
             
@@ -573,26 +629,26 @@
                 renderClassesList();
                 renderClasses();
                 input.value = '';
+                
+                // Subir cambios a la nube si estamos online
+                if (isOnline) {
+                    await uploadClassesToCloud();
+                }
             } else if (classes.includes(newClass)) {
                 alert('Esta clase ya existe');
             }
         }
 
-        // Eliminar clase
-        function deleteClass(cls) {
+        async function deleteClass(cls) {
             if (classes.length <= 1) {
                 alert('Debe haber al menos una clase');
                 return;
             }
             
             if (confirm(`¿Eliminar la clase "${cls}"? También se borrarán TODAS las notas de esta clase.`)) {
-                // Eliminar notas de esa clase
                 notes = notes.filter(n => n.clase !== cls);
-                
-                // Eliminar clase
                 classes = classes.filter(c => c !== cls);
                 
-                // Si la clase actual era la eliminada, seleccionar otra
                 if (currentClass === cls) {
                     currentClass = classes[0];
                 }
@@ -602,6 +658,16 @@
                 renderClassesList();
                 renderNotes();
                 renderClasses();
+                
+                // Subir cambios a la nube si estamos online
+                if (isOnline) {
+                    await uploadClassesToCloud();
+                    
+                    // También eliminar notas de la clase de la nube
+                    for (const note of notes.filter(n => n.clase === cls)) {
+                        await db.ref('notes/' + note.id).remove();
+                    }
+                }
             }
         }
 
@@ -622,26 +688,24 @@
             e.target.closest('.class-item')?.classList.remove('drag-over');
         }
 
-        function drop(e, targetIndex) {
+        async function drop(e, targetIndex) {
             e.preventDefault();
             const sourceIndex = draggedItem;
             
             if (sourceIndex === null || sourceIndex === targetIndex) return;
             
-            // Reordenar el array de clases
             const [removed] = classes.splice(sourceIndex, 1);
             classes.splice(targetIndex, 0, removed);
             
-            // Guardar nuevo orden
             saveClasses();
-            
-            // Actualizar lista en el modal
             renderClassesList();
-            
-            // Actualizar barra de clases
             renderClasses();
             
-            // Limpiar estilos
+            // Subir nuevo orden a la nube
+            if (isOnline) {
+                await uploadClassesToCloud();
+            }
+            
             document.querySelectorAll('.class-item').forEach(item => {
                 item.classList.remove('drag-over', 'dragging');
             });
@@ -656,7 +720,6 @@
             draggedItem = null;
         }
 
-        // Renderizar lista de clases en el modal (con drag & drop)
         function renderClassesList() {
             const list = document.getElementById('classes-list');
             if (!list) return;
@@ -685,7 +748,6 @@
             });
         }
 
-        // Renderizar selector de clases en edición
         function renderClassSelector() {
             const selector = document.getElementById('class-select-list');
             if (!selector) return;
@@ -699,6 +761,10 @@
                     if (currentNoteIndex !== null) {
                         notes[currentNoteIndex].clase = cls;
                         saveToLocal();
+                        
+                        if (isOnline) {
+                            finishSync();
+                        }
                     }
                     toggleModal('modal-class-select', false);
                 };
@@ -710,17 +776,30 @@
             });
         }
 
-        function tryConnect() {
+        async function tryConnect() {
             if (navigator.onLine) {
-                isOnline = true;
                 const btn = document.getElementById('btn-connect');
-                btn.innerText = "En Línea"; btn.className = "online";
-                syncProcess();
-            } else { alert("Sin conexión."); }
+                btn.innerText = "Sincronizando..."; 
+                btn.className = "syncing";
+                
+                isOnline = true;
+                
+                // Sincronizar clases primero
+                await syncClassesFromCloud();
+                
+                // Luego sincronizar notas
+                await syncProcess();
+                
+                btn.innerText = "En Línea"; 
+                btn.className = "online";
+            } else { 
+                alert("Sin conexión."); 
+            }
         }
 
         async function syncProcess() {
             if (!isOnline) return;
+            
             conflictsQueue = [];
             const snapshot = await db.ref('notes').once('value');
             const cloudNotes = snapshot.val() || {};
@@ -728,6 +807,7 @@
             for (const id in cloudNotes) {
                 const cloudNote = cloudNotes[id];
                 const localIdx = notes.findIndex(n => n.id === id);
+                
                 if (localIdx === -1) {
                     notes.push(cloudNote);
                 } else {
@@ -757,7 +837,6 @@
             document.getElementById('conflict-count').innerText = `Tienes ${conflictsQueue.length} notas con versiones distintas.`;
             document.getElementById('conflict-note-title').innerText = localNote.title;
             
-            // UI Recomendación
             const isCloudNewer = cloudNote.timestamp > localNote.timestamp;
             document.getElementById('rec-cloud').innerText = isCloudNewer ? "★ RECOMENDADA" : "";
             document.getElementById('option-cloud').className = isCloudNewer ? "conflict-box recommended-border" : "conflict-box";
@@ -817,7 +896,6 @@
             const now = new Date();
             const id = currentNoteIndex !== null ? notes[currentNoteIndex].id : "ID_" + Date.now();
             
-            // Si es nota nueva, usar clase actual
             const noteClass = currentNoteIndex !== null ? 
                 (notes[currentNoteIndex].clase || currentClass) : 
                 currentClass;
@@ -883,14 +961,10 @@
             const list = document.getElementById('notes-list');
             list.innerHTML = '';
             
-            // Filtrar por clase actual
             const filteredNotes = notes.filter(n => n.clase === currentClass || !n.clase);
-            
-            // Ordenar por timestamp
             filteredNotes.sort((a,b) => b.timestamp - a.timestamp);
             
             filteredNotes.forEach((n, i) => {
-                // Encontrar índice original para operaciones
                 const originalIndex = notes.findIndex(note => note.id === n.id);
                 
                 const div = document.createElement('div');
