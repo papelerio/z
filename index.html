@@ -11,6 +11,40 @@
             --bg: #1a1a1a; --surface: #242424; --text-main: #d1d1d1;
             --text-dim: #888; --accent: #4a9eff; --danger: #ff5555;
             --success: #2ecc71; --border: #333; --warning: #f1c40f;
+            
+            /* Tamaños de viñeta - valores por defecto (mediano) */
+            --note-padding: 20px;
+            --note-title-size: 1.5rem;
+            --note-font-size: 1rem;
+            --note-margin: 15px;
+            --note-small-size: 0.8rem;
+        }
+
+        /* Tamaño GRANDE */
+        body.size-large {
+            --note-padding: 25px;
+            --note-title-size: 1.8rem;
+            --note-font-size: 1.2rem;
+            --note-margin: 20px;
+            --note-small-size: 0.9rem;
+        }
+
+        /* Tamaño MEDIANO (por defecto) */
+        body.size-medium {
+            --note-padding: 20px;
+            --note-title-size: 1.5rem;
+            --note-font-size: 1rem;
+            --note-margin: 15px;
+            --note-small-size: 0.8rem;
+        }
+
+        /* Tamaño COMPACTO */
+        body.size-compact {
+            --note-padding: 10px;
+            --note-title-size: 1.2rem;
+            --note-font-size: 0.9rem;
+            --note-margin: 8px;
+            --note-small-size: 0.7rem;
         }
 
         body { font-family: serif; margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.8; }
@@ -18,21 +52,255 @@
         .active { display: block; }
 
         /* STATUS BAR */
-        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .status-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .status-right {
+            display: flex;
+            gap: 10px;
+        }
         #btn-connect { padding: 8px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
         .offline { background: var(--danger); color: white; }
         .online { background: var(--success); color: white; }
+        
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .btn-icon:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .btn-icon.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
 
-        /* LOBBY */
-        .note-card { padding: 20px; background: var(--surface); border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
+        /* CLASSES BAR */
+        .classes-bar {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--surface);
+        }
+        .classes-bar::-webkit-scrollbar {
+            height: 5px;
+        }
+        .classes-bar::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        .class-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .class-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .class-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .class-btn.add {
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--success);
+        }
+        .class-btn.add:hover {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* MODAL CLASES - con reordenamiento */
+        .classes-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .class-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            cursor: move;
+            transition: all 0.2s;
+        }
+        .class-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+        .class-item.drag-over {
+            border: 2px dashed var(--accent);
+            transform: translateY(2px);
+        }
+        .class-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .drag-handle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            cursor: grab;
+            padding: 0 5px;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .class-name {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+        .delete-class {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .delete-class:hover {
+            background: var(--danger);
+            color: white;
+        }
+        .new-class-input {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .new-class-input input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: inherit;
+        }
+        .new-class-input button {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* LOBBY - usando variables CSS */
+        .note-card { 
+            padding: var(--note-padding); 
+            background: var(--surface); 
+            border-radius: 8px; 
+            margin-bottom: var(--note-margin); 
+            border: 1px solid var(--border); 
+            transition: all 0.3s ease;
+        }
+        .note-card h3 {
+            font-size: var(--note-title-size);
+            margin: 0 0 5px 0;
+        }
+        .note-card small {
+            font-size: var(--note-small-size);
+        }
+        .note-card .card-actions {
+            margin-top: 10px;
+        }
+        .note-class-tag {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
         .sync-warn { color: var(--warning); font-size: 0.8rem; margin-left: 10px; }
-        .card-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-sm { font-size: 0.8rem; padding: 6px 12px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; border-radius: 4px; }
+        .card-actions { display: flex; gap: 10px; }
+        .btn-sm { 
+            font-size: var(--note-small-size); 
+            padding: 6px 12px; 
+            background: transparent; 
+            border: 1px solid var(--border); 
+            color: var(--text-dim); 
+            cursor: pointer; 
+            border-radius: 4px; 
+        }
         .btn-sm:disabled { opacity: 0.2; }
 
         /* MODALES */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; }
         .modal-content { background: var(--surface); margin: 5% auto; padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; border: 1px solid var(--border); }
+        
+        .size-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .size-option:hover {
+            border-color: var(--accent);
+        }
+        .size-option.active {
+            border-color: var(--success);
+            background: rgba(46, 204, 113, 0.1);
+        }
+        .size-preview {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .preview-bar {
+            width: 30px;
+            background: var(--accent);
+            border-radius: 4px;
+            opacity: 0.5;
+        }
+        .preview-bar.large { height: 40px; }
+        .preview-bar.medium { height: 25px; }
+        .preview-bar.compact { height: 15px; }
         
         .conflict-box { background: #111; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid transparent; cursor: pointer; }
         .recommended-border { border-color: var(--warning) !important; }
@@ -52,13 +320,23 @@
         #edit-content { font-size: 1.2rem; min-height: 65vh; resize: none; }
     </style>
 </head>
-<body>
+<body class="size-medium">
 
     <div id="view-lobby" class="view active">
         <div class="status-bar">
-            <h2 style="margin:0">ZenWriter Cloud</h2>
-            <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
+            <div class="status-left">
+                <h2 style="margin:0">ZenWriter Cloud</h2>
+                <button id="btn-copy-mode" class="btn-icon" onclick="toggleCopyMode()" title="Modo copia: incluye título">📋 Copiar + título</button>
+            </div>
+            <div class="status-right">
+                <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño viñetas</button>
+                <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
+            </div>
         </div>
+        
+        <!-- Classes Bar -->
+        <div class="classes-bar" id="classes-bar"></div>
+        
         <div id="notes-list"></div>
         <button class="fab" onclick="createNewNote()">+</button>
     </div>
@@ -72,9 +350,10 @@
     </div>
 
     <div id="view-edit" class="view">
-        <nav style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+        <nav style="margin-bottom: 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
             <button class="btn" style="color: var(--accent);" onclick="saveNote()">✔ Guardar</button>
             <button class="btn" onclick="toggleModal('modal-summary', true)">Resumen</button>
+            <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁 Clase</button>
         </nav>
         <input type="text" id="edit-title" class="editor-input" placeholder="Título...">
         <textarea id="edit-content" class="editor-input" placeholder="Escribe tu historia..."></textarea>
@@ -114,6 +393,75 @@
         </div>
     </div>
 
+    <div id="modal-class-select" class="modal">
+        <div class="modal-content">
+            <h3>Seleccionar Clase</h3>
+            <div id="class-select-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <button class="btn" style="width:100%;" onclick="toggleModal('modal-class-select', false)">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-class-manager" class="modal">
+        <div class="modal-content">
+            <h3>Gestionar Clases</h3>
+            <p style="color: var(--text-dim); font-size: 0.9rem;">Arrastra las clases para reordenarlas</p>
+            
+            <div class="new-class-input">
+                <input type="text" id="new-class-name" placeholder="Nueva clase...">
+                <button onclick="addNewClass()">+</button>
+            </div>
+            
+            <div id="classes-list" class="classes-list"></div>
+            
+            <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-class-manager', false)">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="modal-size" class="modal">
+        <div class="modal-content">
+            <h3>Tamaño de Viñetas</h3>
+            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">Ajusta el espacio que ocupan las notas en pantalla</p>
+            
+            <div class="size-option" onclick="setNoteSize('large')" id="size-large">
+                <div>
+                    <strong>Grande</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar large"></div>
+                    <div class="preview-bar large"></div>
+                    <div class="preview-bar large"></div>
+                </div>
+            </div>
+            
+            <div class="size-option" onclick="setNoteSize('medium')" id="size-medium">
+                <div>
+                    <strong>Mediano</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar medium"></div>
+                    <div class="preview-bar medium"></div>
+                    <div class="preview-bar medium"></div>
+                </div>
+            </div>
+            
+            <div class="size-option" onclick="setNoteSize('compact')" id="size-compact">
+                <div>
+                    <strong>Compacto</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas en pantalla</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar compact"></div>
+                    <div class="preview-bar compact"></div>
+                    <div class="preview-bar compact"></div>
+                </div>
+            </div>
+            
+            <button class="btn" style="width:100%; margin-top:20px;" onclick="toggleModal('modal-size', false)">Cerrar</button>
+        </div>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBqZqKDGk0i6vT33XsKeyFRWDHQvc48MQ0",
@@ -129,9 +477,238 @@
         const db = firebase.database();
         
         let notes = JSON.parse(localStorage.getItem('zen_v3')) || [];
+        
+        // Clases predefinidas
+        let classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
+        let currentClass = localStorage.getItem('zen_current_class') || 'tareas';
+        
+        // Configuración
+        let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false'; // true por defecto
+        let noteSize = localStorage.getItem('zen_note_size') || 'medium';
+        
         let isOnline = false;
         let currentNoteIndex = null;
-        let conflictsQueue = []; // Cola de notas con conflicto
+        let conflictsQueue = [];
+
+        // Variables para drag & drop
+        let draggedItem = null;
+
+        // Aplicar configuración inicial
+        function applySettings() {
+            // Modo copia
+            const copyBtn = document.getElementById('btn-copy-mode');
+            if (copyBtn) {
+                copyBtn.innerText = copyWithTitle ? '📋 Copiar + título' : '📋 Copiar - título';
+                copyBtn.title = copyWithTitle ? 'Modo copia: incluye título' : 'Modo copia: solo contenido';
+            }
+            
+            // Tamaño de viñetas - CORREGIDO: aplicar clase al body
+            document.body.className = `size-${noteSize}`;
+            
+            // Marcar opción activa en modal
+            ['large', 'medium', 'compact'].forEach(size => {
+                const el = document.getElementById(`size-${size}`);
+                if (el) {
+                    if (size === noteSize) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+        }
+
+        // Toggle modo copia
+        function toggleCopyMode() {
+            copyWithTitle = !copyWithTitle;
+            localStorage.setItem('zen_copy_mode', copyWithTitle);
+            applySettings();
+        }
+
+        // Cambiar tamaño de viñetas - CORREGIDO
+        function setNoteSize(size) {
+            noteSize = size;
+            localStorage.setItem('zen_note_size', size);
+            applySettings();
+            toggleModal('modal-size', false);
+        }
+
+        // Guardar clases
+        function saveClasses() {
+            localStorage.setItem('zen_classes', JSON.stringify(classes));
+            localStorage.setItem('zen_current_class', currentClass);
+            renderClasses();
+        }
+
+        // Renderizar barra de clases
+        function renderClasses() {
+            const bar = document.getElementById('classes-bar');
+            if (!bar) return;
+            
+            let html = '';
+            
+            // Botones para cada clase (respetando el orden guardado)
+            classes.forEach(cls => {
+                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls}')">${cls}</button>`;
+            });
+            
+            // Botón para gestionar clases
+            html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
+            
+            bar.innerHTML = html;
+        }
+
+        // Seleccionar clase
+        function selectClass(cls) {
+            currentClass = cls;
+            saveClasses();
+            renderNotes();
+        }
+
+        // Añadir nueva clase
+        function addNewClass() {
+            const input = document.getElementById('new-class-name');
+            const newClass = input.value.trim().toLowerCase();
+            
+            if (newClass && !classes.includes(newClass)) {
+                classes.push(newClass);
+                saveClasses();
+                renderClassesList();
+                renderClasses();
+                input.value = '';
+            } else if (classes.includes(newClass)) {
+                alert('Esta clase ya existe');
+            }
+        }
+
+        // Eliminar clase
+        function deleteClass(cls) {
+            if (classes.length <= 1) {
+                alert('Debe haber al menos una clase');
+                return;
+            }
+            
+            if (confirm(`¿Eliminar la clase "${cls}"? También se borrarán TODAS las notas de esta clase.`)) {
+                // Eliminar notas de esa clase
+                notes = notes.filter(n => n.clase !== cls);
+                
+                // Eliminar clase
+                classes = classes.filter(c => c !== cls);
+                
+                // Si la clase actual era la eliminada, seleccionar otra
+                if (currentClass === cls) {
+                    currentClass = classes[0];
+                }
+                
+                saveClasses();
+                saveToLocal();
+                renderClassesList();
+                renderNotes();
+                renderClasses();
+            }
+        }
+
+        // Funciones para drag & drop de clases
+        function dragStart(e, index) {
+            draggedItem = index;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', index);
+        }
+
+        function dragOver(e, index) {
+            e.preventDefault();
+            e.target.closest('.class-item')?.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            e.target.closest('.class-item')?.classList.remove('drag-over');
+        }
+
+        function drop(e, targetIndex) {
+            e.preventDefault();
+            const sourceIndex = draggedItem;
+            
+            if (sourceIndex === null || sourceIndex === targetIndex) return;
+            
+            // Reordenar el array de clases
+            const [removed] = classes.splice(sourceIndex, 1);
+            classes.splice(targetIndex, 0, removed);
+            
+            // Guardar nuevo orden
+            saveClasses();
+            
+            // Actualizar lista en el modal
+            renderClassesList();
+            
+            // Actualizar barra de clases
+            renderClasses();
+            
+            // Limpiar estilos
+            document.querySelectorAll('.class-item').forEach(item => {
+                item.classList.remove('drag-over', 'dragging');
+            });
+            
+            draggedItem = null;
+        }
+
+        function dragEnd(e) {
+            document.querySelectorAll('.class-item').forEach(item => {
+                item.classList.remove('drag-over', 'dragging');
+            });
+            draggedItem = null;
+        }
+
+        // Renderizar lista de clases en el modal (con drag & drop)
+        function renderClassesList() {
+            const list = document.getElementById('classes-list');
+            if (!list) return;
+            
+            list.innerHTML = '';
+            classes.forEach((cls, index) => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                div.setAttribute('draggable', 'true');
+                div.setAttribute('data-index', index);
+                
+                div.addEventListener('dragstart', (e) => dragStart(e, index));
+                div.addEventListener('dragover', (e) => dragOver(e, index));
+                div.addEventListener('dragleave', dragLeave);
+                div.addEventListener('drop', (e) => drop(e, index));
+                div.addEventListener('dragend', dragEnd);
+                
+                div.innerHTML = `
+                    <div class="class-item-left">
+                        <span class="drag-handle">⋮⋮</span>
+                        <span class="class-name">${cls}</span>
+                    </div>
+                    <button class="delete-class" onclick="deleteClass('${cls}')">Eliminar</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Renderizar selector de clases en edición
+        function renderClassSelector() {
+            const selector = document.getElementById('class-select-list');
+            if (!selector) return;
+            
+            selector.innerHTML = '';
+            classes.forEach(cls => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                div.style.cursor = 'pointer';
+                div.onclick = () => {
+                    if (currentNoteIndex !== null) {
+                        notes[currentNoteIndex].clase = cls;
+                        saveToLocal();
+                    }
+                    toggleModal('modal-class-select', false);
+                };
+                div.innerHTML = `
+                    <span>${cls}</span>
+                    ${currentNoteIndex !== null && notes[currentNoteIndex].clase === cls ? '✓' : ''}
+                `;
+                selector.appendChild(div);
+            });
+        }
 
         function tryConnect() {
             if (navigator.onLine) {
@@ -239,14 +816,26 @@
         function saveNote() {
             const now = new Date();
             const id = currentNoteIndex !== null ? notes[currentNoteIndex].id : "ID_" + Date.now();
+            
+            // Si es nota nueva, usar clase actual
+            const noteClass = currentNoteIndex !== null ? 
+                (notes[currentNoteIndex].clase || currentClass) : 
+                currentClass;
+            
             const noteData = {
-                id, title: document.getElementById('edit-title').value || 'Sin título',
+                id, 
+                clase: noteClass,
+                title: document.getElementById('edit-title').value || 'Sin título',
                 content: document.getElementById('edit-content').value,
                 summary: document.getElementById('edit-summary').value,
-                date: now.toLocaleString(), timestamp: now.getTime(), synced: false
+                date: now.toLocaleString(), 
+                timestamp: now.getTime(), 
+                synced: false
             };
+            
             if (currentNoteIndex === null) notes.unshift(noteData);
             else notes[currentNoteIndex] = noteData;
+            
             saveToLocal();
             if (isOnline) finishSync();
             showLobby();
@@ -261,34 +850,105 @@
             }
         }
 
-        function saveToLocal() { localStorage.setItem('zen_v3', JSON.stringify(notes)); }
-        function saveAndRender() { saveToLocal(); renderNotes(); }
-        function toggleModal(id, s) { document.getElementById(id).style.display = s?'block':'none'; }
+        function saveToLocal() { 
+            localStorage.setItem('zen_v3', JSON.stringify(notes)); 
+        }
+        
+        function saveAndRender() { 
+            saveToLocal(); 
+            renderNotes(); 
+        }
+        
+        function toggleModal(id, s) { 
+            document.getElementById(id).style.display = s ? 'block' : 'none';
+            if (id === 'modal-class-manager' && s) {
+                renderClassesList();
+            }
+            if (id === 'modal-class-select' && s) {
+                renderClassSelector();
+            }
+        }
+        
         function showView(id) { 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
-        function showLobby() { renderNotes(); showView('view-lobby'); }
+        
+        function showLobby() { 
+            renderNotes(); 
+            showView('view-lobby'); 
+        }
+        
         function renderNotes() {
             const list = document.getElementById('notes-list');
             list.innerHTML = '';
-            notes.sort((a,b) => b.timestamp - a.timestamp);
-            notes.forEach((n, i) => {
+            
+            // Filtrar por clase actual
+            const filteredNotes = notes.filter(n => n.clase === currentClass || !n.clase);
+            
+            // Ordenar por timestamp
+            filteredNotes.sort((a,b) => b.timestamp - a.timestamp);
+            
+            filteredNotes.forEach((n, i) => {
+                // Encontrar índice original para operaciones
+                const originalIndex = notes.findIndex(note => note.id === n.id);
+                
                 const div = document.createElement('div');
                 div.className = 'note-card';
-                div.innerHTML = `<div onclick="openNote(${i})" style="cursor:pointer">
+                div.innerHTML = `<div onclick="openNote('${n.id}')" style="cursor:pointer">
                     <h3>${n.title} ${n.synced ? '' : '<span class="sync-warn">⚠️ Local</span>'}</h3>
-                    <small>${n.date}</small></div>
+                    <small>${n.date}</small>
+                    <span class="note-class-tag">${n.clase || 'tareas'}</span>
+                    </div>
                     <div class="card-actions">
-                    <button class="btn-sm" onclick="copyNote(${i})">Copiar</button>
-                    <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${i})">Borrar</button></div>`;
+                    <button class="btn-sm" onclick="copyNote('${n.id}')">Copiar</button>
+                    <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${originalIndex})">Borrar</button></div>`;
                 list.appendChild(div);
             });
         }
-        function copyNote(i) { navigator.clipboard.writeText(notes[i].title + "\n" + notes[i].content); alert("Copiado."); }
-        function createNewNote() { currentNoteIndex = null; document.getElementById('edit-title').value=''; document.getElementById('edit-content').value=''; document.getElementById('edit-summary').value=''; showView('view-edit'); }
-        function openNote(i) { currentNoteIndex = i; const n = notes[i]; document.getElementById('read-title').innerText = n.title; document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; document.getElementById('read-content').innerText = n.content; showView('view-read'); }
-        function editCurrentNote() { const n = notes[currentNoteIndex]; document.getElementById('edit-title').value = n.title; document.getElementById('edit-content').value = n.content; document.getElementById('edit-summary').value = n.summary; showView('view-edit'); }
+        
+        function copyNote(id) { 
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                let textToCopy;
+                if (copyWithTitle) {
+                    textToCopy = note.title + "\n\n" + note.content;
+                } else {
+                    textToCopy = note.content;
+                }
+                navigator.clipboard.writeText(textToCopy); 
+                alert(copyWithTitle ? "Copiado con título." : "Copiado sin título.");
+            }
+        }
+        
+        function createNewNote() { 
+            currentNoteIndex = null; 
+            document.getElementById('edit-title').value = ''; 
+            document.getElementById('edit-content').value = ''; 
+            document.getElementById('edit-summary').value = ''; 
+            showView('view-edit'); 
+        }
+        
+        function openNote(id) { 
+            currentNoteIndex = notes.findIndex(n => n.id === id);
+            const n = notes[currentNoteIndex]; 
+            document.getElementById('read-title').innerText = n.title; 
+            document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; 
+            document.getElementById('read-content').innerText = n.content; 
+            showView('view-read'); 
+        }
+        
+        function editCurrentNote() { 
+            const n = notes[currentNoteIndex]; 
+            document.getElementById('edit-title').value = n.title; 
+            document.getElementById('edit-content').value = n.content; 
+            document.getElementById('edit-summary').value = n.summary; 
+            showView('view-edit'); 
+        }
+
+        // Inicializar
+        applySettings();
+        renderClasses();
         renderNotes();
     </script>
 </body>
