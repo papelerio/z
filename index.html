@@ -2,56 +2,57 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ZenWriter Cloud - Fast Sync</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/monolith.min.css"/>
     <style>
         :root {
             --bg: #1a1a1a; --surface: #242424; --text-main: #d1d1d1;
             --text-dim: #888; --accent: #4a9eff; --danger: #ff5555;
             --success: #2ecc71; --border: #333; --warning: #f1c40f;
             
-            /* Tamaños de viñeta - valores por defecto (mediano) */
             --note-padding: 20px;
             --note-title-size: 1.5rem;
             --note-font-size: 1rem;
             --note-margin: 15px;
             --note-small-size: 0.8rem;
+            --note-preview-lines: 2;
         }
 
-        /* Tamaño GRANDE */
         body.size-large {
             --note-padding: 25px;
             --note-title-size: 1.8rem;
             --note-font-size: 1.2rem;
             --note-margin: 20px;
             --note-small-size: 0.9rem;
+            --note-preview-lines: 3;
         }
 
-        /* Tamaño MEDIANO (por defecto) */
         body.size-medium {
             --note-padding: 20px;
             --note-title-size: 1.5rem;
             --note-font-size: 1rem;
             --note-margin: 15px;
             --note-small-size: 0.8rem;
+            --note-preview-lines: 2;
         }
 
-        /* Tamaño COMPACTO */
         body.size-compact {
-            --note-padding: 10px;
-            --note-title-size: 1.2rem;
-            --note-font-size: 0.9rem;
-            --note-margin: 8px;
-            --note-small-size: 0.7rem;
+            --note-padding: 8px;
+            --note-title-size: 0.95rem;
+            --note-font-size: 0.75rem;
+            --note-margin: 6px;
+            --note-small-size: 0.65rem;
+            --note-preview-lines: 1;
         }
 
-        body { font-family: serif; margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.8; }
+        body { font-family: serif; margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
         .view { display: none; padding: 20px; max-width: 850px; margin: auto; box-sizing: border-box; }
         .active { display: block; }
 
-        /* STATUS BAR */
         .status-bar { 
             display: flex; 
             justify-content: space-between; 
@@ -60,19 +61,19 @@
             border-bottom: 1px solid var(--border); 
             padding-bottom: 10px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
         .status-left {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         .status-right {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
-        #btn-connect { padding: 8px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
+        #btn-connect { padding: 6px 14px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         .offline { background: var(--danger); color: white; }
         .online { background: var(--success); color: white; }
         .syncing { background: var(--warning); color: black; }
@@ -81,75 +82,44 @@
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            padding: 8px 12px;
+            padding: 5px 10px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             white-space: nowrap;
+            transition: all 0.2s;
         }
         .btn-icon:hover {
             border-color: var(--accent);
             color: var(--accent);
         }
-        .btn-icon.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
 
-        /* CLASSES BAR */
         .classes-bar {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             overflow-x: auto;
-            padding: 10px 0;
-            margin-bottom: 20px;
+            padding: 8px 0;
+            margin-bottom: 15px;
             scrollbar-width: thin;
-            scrollbar-color: var(--accent) var(--surface);
         }
-        .classes-bar::-webkit-scrollbar {
-            height: 5px;
-        }
-        .classes-bar::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 10px;
-        }
+        .classes-bar::-webkit-scrollbar { height: 4px; }
+        .classes-bar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+        
         .class-btn {
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            padding: 8px 16px;
+            padding: 5px 12px;
             border-radius: 20px;
             cursor: pointer;
             white-space: nowrap;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            font-size: 0.8rem;
         }
-        .class-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        .class-btn.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-        .class-btn.add {
-            background: transparent;
-            border: 1px dashed var(--border);
-            color: var(--success);
-        }
-        .class-btn.add:hover {
-            border-color: var(--success);
-            color: var(--success);
-        }
+        .class-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .class-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .class-btn.add { background: transparent; border: 1px dashed var(--border); color: var(--success); }
 
-        /* MODAL CLASES - con reordenamiento */
-        .classes-list {
-            max-height: 400px;
-            overflow-y: auto;
-            margin: 20px 0;
-        }
+        .classes-list { max-height: 400px; overflow-y: auto; margin: 20px 0; }
         .class-item {
             display: flex;
             justify-content: space-between;
@@ -160,34 +130,13 @@
             margin-bottom: 10px;
             border: 1px solid var(--border);
             cursor: move;
-            transition: all 0.2s;
         }
-        .class-item.dragging {
-            opacity: 0.5;
-            transform: scale(0.98);
-        }
-        .class-item.drag-over {
-            border: 2px dashed var(--accent);
-            transform: translateY(2px);
-        }
-        .class-item-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .drag-handle {
-            color: var(--text-dim);
-            font-size: 1.2rem;
-            cursor: grab;
-            padding: 0 5px;
-        }
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-        .class-name {
-            color: var(--text-main);
-            font-weight: bold;
-        }
+        .class-item.dragging { opacity: 0.5; transform: scale(0.98); }
+        .class-item.drag-over { border: 2px dashed var(--accent); transform: translateY(2px); }
+        .class-item-left { display: flex; align-items: center; gap: 10px; }
+        .drag-handle { color: var(--text-dim); font-size: 1.2rem; cursor: grab; padding: 0 5px; }
+        .drag-handle:active { cursor: grabbing; }
+        .class-name { color: var(--text-main); font-weight: bold; }
         .delete-class {
             background: transparent;
             border: 1px solid var(--danger);
@@ -195,12 +144,8 @@
             padding: 4px 12px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
         }
-        .delete-class:hover {
-            background: var(--danger);
-            color: white;
-        }
+        .delete-class:hover { background: var(--danger); color: white; }
         .new-class-input {
             display: flex;
             gap: 10px;
@@ -213,7 +158,6 @@
             color: var(--text-main);
             padding: 10px;
             border-radius: 5px;
-            font-family: inherit;
         }
         .new-class-input button {
             background: var(--success);
@@ -224,51 +168,279 @@
             cursor: pointer;
         }
 
-        /* LOBBY - usando variables CSS */
+        .notes-container {
+            min-height: 200px;
+        }
         .note-card { 
             padding: var(--note-padding); 
             background: var(--surface); 
             border-radius: 8px; 
             margin-bottom: var(--note-margin); 
             border: 1px solid var(--border); 
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            cursor: default;
+            position: relative;
+        }
+        .note-card.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+        .note-card.drag-over {
+            border: 2px dashed var(--accent);
+            margin-top: calc(var(--note-margin) + 5px);
+            margin-bottom: calc(var(--note-margin) + 5px);
         }
         .note-card h3 {
             font-size: var(--note-title-size);
-            margin: 0 0 5px 0;
+            margin: 0 0 4px 0;
+            font-weight: bold;
         }
-        .note-card small {
-            font-size: var(--note-small-size);
+        .note-card .note-date { 
+            font-size: var(--note-small-size); 
+            opacity: 0.8;
+            margin-bottom: 4px;
         }
+        .note-card .note-preview {
+            font-size: var(--note-font-size);
+            margin-top: 6px;
+            opacity: 0.9;
+            display: -webkit-box;
+            -webkit-line-clamp: var(--note-preview-lines);
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+        .note-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .note-card .card-content { flex: 1; cursor: pointer; }
         .note-card .card-actions {
-            margin-top: 10px;
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            align-items: center;
         }
+        .note-card .action-buttons { display: flex; gap: 8px; }
+        .drag-note-handle {
+            cursor: grab;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.2);
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            min-height: 28px;
+        }
+        .drag-note-handle:active { cursor: grabbing; }
+        .drag-note-handle:hover { background: rgba(0,0,0,0.4); }
+        
         .note-class-tag {
             display: inline-block;
-            background: var(--accent);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            margin-left: 10px;
+            background: rgba(0,0,0,0.3);
+            color: inherit;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.65rem;
             text-transform: uppercase;
+            margin-top: 4px;
         }
-        .sync-warn { color: var(--warning); font-size: 0.8rem; margin-left: 10px; }
-        .card-actions { display: flex; gap: 10px; }
+        .sync-warn { color: var(--warning); font-size: 0.7rem; margin-left: 6px; }
         .btn-sm { 
             font-size: var(--note-small-size); 
-            padding: 6px 12px; 
-            background: transparent; 
-            border: 1px solid var(--border); 
-            color: var(--text-dim); 
+            padding: 4px 8px; 
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: inherit;
             cursor: pointer; 
-            border-radius: 4px; 
+            border-radius: 4px;
         }
-        .btn-sm:disabled { opacity: 0.2; }
+        .btn-sm:hover { background: rgba(0,0,0,0.5); }
+        .btn-sm:disabled { opacity: 0.2; cursor: not-allowed; }
+        
+        .color-btn {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            min-height: 36px;
+        }
+        .color-btn:active { transform: scale(0.95); }
 
-        /* MODALES */
+        .color-preview { width: 50px; height: 50px; border-radius: 8px; margin-bottom: 15px; border: 2px solid var(--border); }
+        .recent-colors { 
+            display: flex; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+            margin: 20px 0; 
+            padding: 15px; 
+            background: var(--bg); 
+            border-radius: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .recent-color { 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            border: 2px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .recent-color:hover { 
+            transform: scale(1.1); 
+            border-color: var(--accent);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .pickr-container { 
+            margin: 20px 0; 
+            min-height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .view { padding: 12px; }
+            .drag-note-handle { padding: 8px 10px; min-width: 32px; min-height: 32px; }
+            .color-btn { padding: 8px 12px; min-width: 42px; min-height: 42px; }
+            .btn-sm { padding: 6px 10px; }
+            .class-btn { padding: 6px 12px; }
+            .btn-icon { padding: 6px 10px; font-size: 0.7rem; }
+            .status-left h2 { font-size: 1.2rem; }
+            .fab { width: 48px; height: 48px; font-size: 24px; bottom: 20px; right: 20px; }
+            .recent-color { width: 40px; height: 40px; }
+        }
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; }
-        .modal-content { background: var(--surface); margin: 5% auto; padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; border: 1px solid var(--border); }
+        .modal-content { background: var(--surface); margin: 5% auto; padding: 25px; width: 90%; max-width: 700px; border-radius: 12px; border: 1px solid var(--border); }
+        
+        /* Estilos para el modal unificado */
+        .sync-section {
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border);
+        }
+        .sync-section h4 {
+            margin: 0 0 10px 0;
+            color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sync-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+        .sync-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .sync-option-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .sync-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--surface);
+        }
+        .sync-option input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .sync-option.recommended {
+            background: rgba(241, 196, 15, 0.2);
+            border: 1px solid var(--warning);
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        .badge-cloud { background: var(--accent); color: white; }
+        .badge-local { background: var(--text-dim); color: white; }
+        .badge-recommended { background: var(--warning); color: black; }
+        .preview-text {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            font-family: monospace;
+        }
+        .color-preview-small {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin: 0 5px;
+            border: 1px solid var(--border);
+        }
+        .mark-all-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+        .mark-all-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+        .action-buttons-sync {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+        .btn-secondary {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            flex: 1;
+        }
         
         .size-option {
             display: flex;
@@ -281,44 +453,28 @@
             border: 1px solid var(--border);
             cursor: pointer;
         }
-        .size-option:hover {
-            border-color: var(--accent);
-        }
-        .size-option.active {
-            border-color: var(--success);
-            background: rgba(46, 204, 113, 0.1);
-        }
-        .size-preview {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .preview-bar {
-            width: 30px;
-            background: var(--accent);
-            border-radius: 4px;
-            opacity: 0.5;
-        }
+        .size-option.active { border-color: var(--success); background: rgba(46, 204, 113, 0.1); }
+        .size-preview { display: flex; gap: 10px; align-items: center; }
+        .preview-bar { width: 30px; background: var(--accent); border-radius: 4px; opacity: 0.5; }
         .preview-bar.large { height: 40px; }
         .preview-bar.medium { height: 25px; }
-        .preview-bar.compact { height: 15px; }
+        .preview-bar.compact { height: 12px; }
         
-        .conflict-box { background: #111; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid transparent; cursor: pointer; }
-        .recommended-border { border-color: var(--warning) !important; }
-        
-        .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-bottom: 5px; display: inline-block; }
-        .tag-cloud { background: var(--accent); color: white; }
-        .tag-local { background: var(--text-dim); color: white; }
-        .tag-rec { color: var(--warning); font-weight: bold; margin-left: 10px; }
-
-        /* BOTONES */
         .btn-fast { background: var(--warning); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
-        .fab { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .fab { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
         .btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 10px 20px; cursor: pointer; border-radius: 5px; }
 
         .editor-input { width: 100%; border: none; outline: none; background: transparent; color: var(--text-main); font-family: inherit; }
         #edit-title { font-size: 2rem; color: #fff; margin-bottom: 20px; }
         #edit-content { font-size: 1.2rem; min-height: 65vh; resize: none; }
+        
+        .pickr-container .pcr-app {
+            position: relative !important;
+            margin: 0 auto !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
+        }
     </style>
 </head>
 <body class="size-medium">
@@ -326,19 +482,20 @@
     <div id="view-lobby" class="view active">
         <div class="status-bar">
             <div class="status-left">
-                <h2 style="margin:0">ZenWriter Cloud</h2>
-                <button id="btn-copy-mode" class="btn-icon" onclick="toggleCopyMode()" title="Modo copia: incluye título">📋 Copiar + título</button>
+                <h2 style="margin:0; font-size: 1.3rem;">ZenWriter</h2>
+                <button id="btn-copy-mode" class="btn-icon" onclick="toggleCopyMode()">📋 +título</button>
+                <button id="btn-preview-mode" class="btn-icon" onclick="togglePreviewMode()">📄 +contenido</button>
+                <button id="btn-date-mode" class="btn-icon" onclick="toggleDateMode()">📅 +fecha</button>
             </div>
             <div class="status-right">
-                <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño viñetas</button>
+                <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño</button>
                 <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
             </div>
         </div>
         
-        <!-- Classes Bar -->
         <div class="classes-bar" id="classes-bar"></div>
         
-        <div id="notes-list"></div>
+        <div id="notes-list" class="notes-container"></div>
         <button class="fab" onclick="createNewNote()">+</button>
     </div>
 
@@ -360,28 +517,37 @@
         <textarea id="edit-content" class="editor-input" placeholder="Escribe tu historia..."></textarea>
     </div>
 
-    <div id="modal-conflict" class="modal">
+    <div id="modal-color" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--warning); margin-top:0;">Conflictos Detectados</h2>
-            <p id="conflict-count" style="font-size: 0.9rem;"></p>
-            
-            <button class="btn-fast" onclick="resolveAllRecommended()">⏩ USAR RECOMENDADA EN TODO</button>
-            
-            <div style="border-top: 1px solid var(--border); padding-top: 15px;">
-                <p style="font-size: 0.8rem; color: var(--text-dim);">O evalúa esta nota manualmente:</p>
-                <h3 id="conflict-note-title" style="color:#fff; margin-bottom:10px;"></h3>
-                
-                <div id="option-cloud" class="conflict-box">
-                    <span class="tag tag-cloud">En la Nube</span> <span id="rec-cloud" class="tag-rec"></span>
-                    <div id="cloud-date" style="font-weight:bold;"></div>
-                    <div id="cloud-preview" style="font-size:0.8rem; color:var(--text-dim); margin-top:5px;"></div>
-                </div>
+            <h3>🎨 Personalizar Color</h3>
+            <div id="color-preview" class="color-preview"></div>
+            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;" id="color-note-title"></p>
+            <div id="pickr-container" class="pickr-container"></div>
+            <div>
+                <h4>🎨 Accesos rápidos (últimos 15)</h4>
+                <div id="recent-colors" class="recent-colors"></div>
+                <p style="color: var(--text-dim); font-size: 0.7rem; margin-top: 8px;">💡 Selecciona un color y haz clic en "Guardar" para añadirlo a accesos rápidos</p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="flex: 1;" onclick="resetNoteColorAndClose()">Resetear y cerrar</button>
+                <button class="btn" style="flex: 1;" onclick="closeColorModal()">Cerrar sin guardar</button>
+            </div>
+        </div>
+    </div>
 
-                <div id="option-local" class="conflict-box">
-                    <span class="tag tag-local">Este Dispositivo</span> <span id="rec-local" class="tag-rec"></span>
-                    <div id="local-date" style="font-weight:bold;"></div>
-                    <div id="local-preview" style="font-size:0.8rem; color:var(--text-dim); margin-top:5px;"></div>
-                </div>
+    <!-- MODAL UNIFICADO DE SINCRONIZACIÓN -->
+    <div id="modal-unified-sync" class="modal">
+        <div class="modal-content">
+            <h2 style="color:var(--warning); margin-top:0;">🔄 Cambios Detectados en la Nube</h2>
+            <p style="margin-bottom: 15px; color: var(--text-dim);">Revisa los cambios y selecciona qué versión quieres usar para cada elemento.</p>
+            
+            <button id="mark-all-recommended" class="mark-all-btn">✓ Marcar recomendado en todo</button>
+            
+            <div id="sync-sections-container"></div>
+            
+            <div class="action-buttons-sync">
+                <button id="process-all-btn" class="btn-primary">✅ Procesar todo</button>
+                <button id="cancel-sync-btn" class="btn-secondary">❌ No conectar aún</button>
             </div>
         </div>
     </div>
@@ -406,14 +572,11 @@
         <div class="modal-content">
             <h3>Gestionar Clases</h3>
             <p style="color: var(--text-dim); font-size: 0.9rem;">Arrastra las clases para reordenarlas</p>
-            
             <div class="new-class-input">
                 <input type="text" id="new-class-name" placeholder="Nueva clase...">
                 <button onclick="addNewClass()">+</button>
             </div>
-            
             <div id="classes-list" class="classes-list"></div>
-            
             <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-class-manager', false)">Cerrar</button>
         </div>
     </div>
@@ -421,44 +584,18 @@
     <div id="modal-size" class="modal">
         <div class="modal-content">
             <h3>Tamaño de Viñetas</h3>
-            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">Ajusta el espacio que ocupan las notas en pantalla</p>
-            
             <div class="size-option" onclick="setNoteSize('large')" id="size-large">
-                <div>
-                    <strong>Grande</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar large"></div>
-                    <div class="preview-bar large"></div>
-                    <div class="preview-bar large"></div>
-                </div>
+                <div><strong>Grande</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div></div>
+                <div class="size-preview"><div class="preview-bar large"></div><div class="preview-bar large"></div><div class="preview-bar large"></div></div>
             </div>
-            
             <div class="size-option" onclick="setNoteSize('medium')" id="size-medium">
-                <div>
-                    <strong>Mediano</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar medium"></div>
-                    <div class="preview-bar medium"></div>
-                    <div class="preview-bar medium"></div>
-                </div>
+                <div><strong>Mediano</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div></div>
+                <div class="size-preview"><div class="preview-bar medium"></div><div class="preview-bar medium"></div><div class="preview-bar medium"></div></div>
             </div>
-            
             <div class="size-option" onclick="setNoteSize('compact')" id="size-compact">
-                <div>
-                    <strong>Compacto</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas en pantalla</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar compact"></div>
-                    <div class="preview-bar compact"></div>
-                    <div class="preview-bar compact"></div>
-                </div>
+                <div><strong>Compacto</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas</div></div>
+                <div class="size-preview"><div class="preview-bar compact"></div><div class="preview-bar compact"></div><div class="preview-bar compact"></div></div>
             </div>
-            
             <button class="btn" style="width:100%; margin-top:20px;" onclick="toggleModal('modal-size', false)">Cerrar</button>
         </div>
     </div>
@@ -478,408 +615,642 @@
         const db = firebase.database();
         
         let notes = JSON.parse(localStorage.getItem('zen_v3')) || [];
+        let deletedNotesLog = JSON.parse(localStorage.getItem('zen_deleted_log')) || [];
         
-        // Clases locales
         let classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
         let currentClass = localStorage.getItem('zen_current_class') || 'tareas';
         
-        // Configuración
         let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false';
+        let showPreview = localStorage.getItem('zen_show_preview') !== 'false';
+        let showDate = localStorage.getItem('zen_show_date') !== 'false';
         let noteSize = localStorage.getItem('zen_note_size') || 'medium';
+        
+        let recentColors = JSON.parse(localStorage.getItem('zen_recent_colors')) || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#3498db', '#95a5a6', '#34495e'];
         
         let isOnline = false;
         let currentNoteIndex = null;
-        let conflictsQueue = [];
+        let currentColorNoteId = null;
+        let pickr = null;
+        let pickrInitialized = false;
+        
+        // Datos de sincronización
+        let syncData = {
+            deletedNotes: [],
+            classChanges: null,
+            colorChanges: [],
+            contentConflicts: [],
+            classChoice: null,
+            colorChoices: {},
+            contentChoices: {}
+        };
+        
+        let autoScrollInterval = null;
+        let scrollSpeed = 0;
 
-        // Variables para drag & drop
-        let draggedItem = null;
+        let draggedClassItem = null;
+        let draggedNoteId = null;
 
-        // Aplicar configuración inicial
-        function applySettings() {
-            const copyBtn = document.getElementById('btn-copy-mode');
-            if (copyBtn) {
-                copyBtn.innerText = copyWithTitle ? '📋 Copiar + título' : '📋 Copiar - título';
-                copyBtn.title = copyWithTitle ? 'Modo copia: incluye título' : 'Modo copia: solo contenido';
+        function getContrastColor(hexcolor) {
+            if (!hexcolor || hexcolor === '#242424') return '#d1d1d1';
+            let r, g, b;
+            if (hexcolor.startsWith('#')) {
+                r = parseInt(hexcolor.slice(1, 3), 16);
+                g = parseInt(hexcolor.slice(3, 5), 16);
+                b = parseInt(hexcolor.slice(5, 7), 16);
+            } else {
+                return '#d1d1d1';
             }
-            
-            document.body.className = `size-${noteSize}`;
-            
-            ['large', 'medium', 'compact'].forEach(size => {
-                const el = document.getElementById(`size-${size}`);
-                if (el) {
-                    if (size === noteSize) el.classList.add('active');
-                    else el.classList.remove('active');
-                }
-            });
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#000000' : '#ffffff';
         }
 
-        function toggleCopyMode() {
-            copyWithTitle = !copyWithTitle;
-            localStorage.setItem('zen_copy_mode', copyWithTitle);
-            applySettings();
+        function truncateText(text, maxLength = 100) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
         }
 
-        function setNoteSize(size) {
-            noteSize = size;
-            localStorage.setItem('zen_note_size', size);
-            applySettings();
-            toggleModal('modal-size', false);
+        function saveRecentColor(color) {
+            if (!color) return;
+            const index = recentColors.indexOf(color);
+            if (index !== -1) {
+                recentColors.splice(index, 1);
+            }
+            recentColors.unshift(color);
+            if (recentColors.length > 15) recentColors.pop();
+            localStorage.setItem('zen_recent_colors', JSON.stringify(recentColors));
         }
 
-        // Guardar clases localmente
-        function saveClasses() {
-            localStorage.setItem('zen_classes', JSON.stringify(classes));
-            localStorage.setItem('zen_current_class', currentClass);
-            renderClasses();
-        }
-
-        // Subir clases a la nube
-        async function uploadClassesToCloud() {
-            if (!isOnline) return;
-            await db.ref('metadata/classes').set({
-                list: classes,
-                timestamp: Date.now()
-            });
-        }
-
-        // Sincronizar clases desde la nube
-        async function syncClassesFromCloud() {
-            if (!isOnline) return;
-            
-            try {
-                const snapshot = await db.ref('metadata/classes').once('value');
-                const cloudClassesData = snapshot.val();
+        function addToDeletedLog(noteId) {
+            if (!deletedNotesLog.includes(noteId)) {
+                deletedNotesLog.unshift(noteId);
+                if (deletedNotesLog.length > 30) deletedNotesLog.pop();
+                localStorage.setItem('zen_deleted_log', JSON.stringify(deletedNotesLog));
                 
-                if (cloudClassesData && cloudClassesData.list) {
-                    const cloudClasses = cloudClassesData.list;
-                    
-                    // Verificar si hay clases nuevas en la nube
-                    const newClasses = cloudClasses.filter(c => !classes.includes(c));
-                    
-                    // Verificar si hay clases en diferente orden
-                    const sameOrder = JSON.stringify(classes) === JSON.stringify(cloudClasses);
-                    
-                    if (newClasses.length > 0 || !sameOrder) {
-                        // Preguntar al usuario qué hacer
-                        const action = confirm(
-                            `Se detectaron cambios en las clases de la nube.\n\n` +
-                            `Nubes: ${cloudClasses.join(', ')}\n` +
-                            `Local: ${classes.join(', ')}\n\n` +
-                            `¿Usar la configuración de la nube? (Aceptar = usar nube, Cancelar = mantener local)`
-                        );
-                        
-                        if (action) {
-                            // Usar clases de la nube
-                            classes = [...cloudClasses];
-                            saveClasses();
-                            renderClassesList();
-                            renderClasses();
-                            
-                            // Asegurar que la clase actual existe
-                            if (!classes.includes(currentClass)) {
-                                currentClass = classes[0];
-                                saveClasses();
-                            }
-                            
-                            alert('Clases actualizadas desde la nube');
-                        } else {
-                            // Mantener clases locales y subirlas a la nube
-                            await uploadClassesToCloud();
-                            alert('Tus clases locales se han subido a la nube');
-                        }
-                    }
-                } else {
-                    // No hay clases en la nube, subir las locales
-                    await uploadClassesToCloud();
+                if (isOnline) {
+                    db.ref('metadata/deleted_notes').set({
+                        list: deletedNotesLog,
+                        timestamp: Date.now()
+                    });
                 }
-            } catch (error) {
-                console.error('Error sincronizando clases:', error);
             }
         }
 
-        // Renderizar barra de clases
-        function renderClasses() {
-            const bar = document.getElementById('classes-bar');
-            if (!bar) return;
-            
-            let html = '';
-            
-            classes.forEach(cls => {
-                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls}')">${cls}</button>`;
-            });
-            
-            html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
-            
-            bar.innerHTML = html;
+        function destroyPickr() {
+            if (pickr) {
+                try {
+                    pickr.destroy();
+                } catch(e) {}
+                pickr = null;
+            }
+            pickrInitialized = false;
         }
 
-        function selectClass(cls) {
-            currentClass = cls;
-            saveClasses();
+        function closeColorModal() {
+            const modal = document.getElementById('modal-color');
+            if (modal) modal.style.display = 'none';
+            currentColorNoteId = null;
+            destroyPickr();
+            const container = document.getElementById('pickr-container');
+            if (container) container.innerHTML = '';
+        }
+
+        function renderRecentColors() {
+            const recentColorsDiv = document.getElementById('recent-colors');
+            if (!recentColorsDiv) return;
+            recentColorsDiv.innerHTML = '';
+            recentColors.forEach(color => {
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'recent-color';
+                colorDiv.style.backgroundColor = color;
+                colorDiv.title = color;
+                colorDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    setNoteColorAndClose(color);
+                };
+                recentColorsDiv.appendChild(colorDiv);
+            });
+        }
+
+        function openColorModal(noteId) {
+            destroyPickr();
+            currentColorNoteId = noteId;
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            const currentColor = note.color || '#242424';
+            const titleEl = document.getElementById('color-note-title');
+            const previewEl = document.getElementById('color-preview');
+            if (titleEl) titleEl.innerText = `Nota: ${note.title}`;
+            if (previewEl) previewEl.style.backgroundColor = currentColor;
+            
+            renderRecentColors();
+            
+            const container = document.getElementById('pickr-container');
+            if (container) {
+                container.innerHTML = '';
+                const pickrWrapper = document.createElement('div');
+                pickrWrapper.id = 'pickr-inner-wrapper';
+                container.appendChild(pickrWrapper);
+                
+                setTimeout(() => {
+                    try {
+                        if (!document.getElementById('pickr-inner-wrapper')) return;
+                        pickr = Pickr.create({
+                            el: '#pickr-inner-wrapper',
+                            theme: 'monolith',
+                            default: currentColor,
+                            container: container,
+                            components: {
+                                preview: true,
+                                opacity: false,
+                                hue: true,
+                                interaction: { hex: true, input: true, save: true, cancel: true }
+                            }
+                        });
+                        pickrInitialized = true;
+                        pickr.on('save', (color) => {
+                            if (color) {
+                                const newColor = color.toHEXA().toString();
+                                applyColorToNote(newColor);
+                                saveRecentColor(newColor);
+                                if (previewEl) previewEl.style.backgroundColor = newColor;
+                                renderRecentColors();
+                            }
+                        });
+                    } catch(e) {
+                        console.error('Error creating Pickr:', e);
+                    }
+                }, 100);
+            }
+            const modal = document.getElementById('modal-color');
+            if (modal) modal.style.display = 'block';
+        }
+        
+        function applyColorToNote(color) {
+            if (currentColorNoteId) {
+                const noteIndex = notes.findIndex(n => n.id === currentColorNoteId);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].color = color;
+                    saveToLocal();
+                    renderNotes();
+                    if (isOnline && notes[noteIndex].synced) {
+                        db.ref('notes/' + currentColorNoteId).update({ color: color });
+                    }
+                }
+            }
+        }
+        
+        function setNoteColorAndClose(color) {
+            applyColorToNote(color);
+            saveRecentColor(color);
+            closeColorModal();
+        }
+
+        function resetNoteColorAndClose() {
+            if (currentColorNoteId) {
+                const noteIndex = notes.findIndex(n => n.id === currentColorNoteId);
+                if (noteIndex !== -1) {
+                    delete notes[noteIndex].color;
+                    saveToLocal();
+                    renderNotes();
+                    if (isOnline && notes[noteIndex].synced) {
+                        db.ref('notes/' + currentColorNoteId).update({ color: null });
+                    }
+                }
+            }
+            closeColorModal();
+        }
+
+        function togglePreviewMode() {
+            showPreview = !showPreview;
+            localStorage.setItem('zen_show_preview', showPreview);
+            const btn = document.getElementById('btn-preview-mode');
+            if (btn) btn.innerText = showPreview ? '📄 +contenido' : '📄 -contenido';
             renderNotes();
         }
 
-        async function addNewClass() {
-            const input = document.getElementById('new-class-name');
-            const newClass = input.value.trim().toLowerCase();
-            
-            if (newClass && !classes.includes(newClass)) {
-                classes.push(newClass);
-                saveClasses();
-                renderClassesList();
-                renderClasses();
-                input.value = '';
-                
-                // Subir cambios a la nube si estamos online
-                if (isOnline) {
-                    await uploadClassesToCloud();
-                }
-            } else if (classes.includes(newClass)) {
-                alert('Esta clase ya existe');
-            }
+        function toggleDateMode() {
+            showDate = !showDate;
+            localStorage.setItem('zen_show_date', showDate);
+            const btn = document.getElementById('btn-date-mode');
+            if (btn) btn.innerText = showDate ? '📅 +fecha' : '📅 -fecha';
+            renderNotes();
         }
 
-        async function deleteClass(cls) {
-            if (classes.length <= 1) {
-                alert('Debe haber al menos una clase');
+        // Auto-scroll
+        function startAutoScroll(e) {
+            const viewportHeight = window.innerHeight;
+            const mouseY = e.clientY;
+            const edgeThreshold = 120;
+            if (mouseY < edgeThreshold) {
+                const factor = 1 - (mouseY / edgeThreshold);
+                scrollSpeed = -12 * Math.min(1, factor);
+            } else if (mouseY > viewportHeight - edgeThreshold) {
+                const factor = (mouseY - (viewportHeight - edgeThreshold)) / edgeThreshold;
+                scrollSpeed = 12 * Math.min(1, factor);
+            } else {
+                scrollSpeed = 0;
+            }
+            if (autoScrollInterval) clearInterval(autoScrollInterval);
+            if (Math.abs(scrollSpeed) > 0.5) {
+                autoScrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 16);
+            }
+        }
+        
+        function stopAutoScroll() {
+            if (autoScrollInterval) clearInterval(autoScrollInterval);
+            scrollSpeed = 0;
+        }
+
+        function noteDragStart(e, noteId) {
+            draggedNoteId = noteId;
+            const card = e.target.closest('.note-card');
+            if (card) card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', noteId);
+            document.addEventListener('dragover', onDragOver);
+            document.addEventListener('dragend', onDragEndGlobal);
+        }
+        
+        function onDragOver(e) { startAutoScroll(e); }
+        
+        function onDragEndGlobal() {
+            stopAutoScroll();
+            document.removeEventListener('dragover', onDragOver);
+            document.removeEventListener('dragend', onDragEndGlobal);
+        }
+
+        function noteDragOver(e, noteId) {
+            e.preventDefault();
+            const targetCard = e.target.closest('.note-card');
+            if (targetCard && targetCard.getAttribute('data-note-id') !== draggedNoteId) {
+                targetCard.classList.add('drag-over');
+            }
+            startAutoScroll(e);
+        }
+
+        function noteDragLeave(e) {
+            const card = e.target.closest('.note-card');
+            if (card) card.classList.remove('drag-over');
+        }
+
+        function noteDrop(e, targetNoteId) {
+            e.preventDefault();
+            stopAutoScroll();
+            if (draggedNoteId && draggedNoteId !== targetNoteId) {
+                const draggedIndex = notes.findIndex(n => n.id === draggedNoteId);
+                const targetIndex = notes.findIndex(n => n.id === targetNoteId);
+                if (draggedIndex !== -1 && targetIndex !== -1) {
+                    const [draggedNote] = notes.splice(draggedIndex, 1);
+                    notes.splice(targetIndex, 0, draggedNote);
+                    saveToLocal();
+                    renderNotes();
+                    if (isOnline) uploadNotesOrderToCloud();
+                }
+            }
+            document.querySelectorAll('.note-card').forEach(card => card.classList.remove('drag-over', 'dragging'));
+            draggedNoteId = null;
+        }
+
+        function noteDragEnd(e) {
+            stopAutoScroll();
+            document.querySelectorAll('.note-card').forEach(card => card.classList.remove('drag-over', 'dragging'));
+            draggedNoteId = null;
+        }
+
+        async function uploadNotesOrderToCloud() {
+            if (!isOnline) return;
+            const orderData = {};
+            notes.forEach((note, index) => { orderData[note.id] = { order: index, timestamp: note.timestamp }; });
+            await db.ref('metadata/notes_order').set(orderData);
+        }
+
+        // ==================== Sincronización Unificada ====================
+        async function fetchSyncData() {
+            const snapshot = await db.ref('notes').once('value');
+            const cloudNotes = snapshot.val() || {};
+            const classesSnapshot = await db.ref('metadata/classes').once('value');
+            const cloudClasses = classesSnapshot.val();
+            const orderSnapshot = await db.ref('metadata/notes_order').once('value');
+            const cloudOrder = orderSnapshot.val();
+            const deletedSnapshot = await db.ref('metadata/deleted_notes').once('value');
+            const cloudDeleted = deletedSnapshot.val();
+            
+            // 1. Notas eliminadas
+            const deletedNotes = [];
+            if (cloudDeleted && cloudDeleted.list) {
+                for (const id of cloudDeleted.list) {
+                    if (notes.find(n => n.id === id)) {
+                        const note = notes.find(n => n.id === id);
+                        deletedNotes.push({ id, title: note?.title || id });
+                    }
+                }
+            }
+            
+            // 2. Clases
+            let classChanges = null;
+            if (cloudClasses && cloudClasses.list) {
+                const cloudClassesList = cloudClasses.list;
+                if (JSON.stringify(classes) !== JSON.stringify(cloudClassesList)) {
+                    const isCloudNewer = cloudClasses.timestamp > (parseInt(localStorage.getItem('zen_classes_timestamp')) || 0);
+                    classChanges = {
+                        cloud: cloudClassesList,
+                        local: [...classes],
+                        recommended: isCloudNewer ? 'cloud' : 'local'
+                    };
+                }
+            }
+            
+            // 3. Colores
+            const colorChanges = [];
+            for (const note of notes) {
+                const cloudNote = cloudNotes[note.id];
+                if (cloudNote && cloudNote.color !== note.color) {
+                    colorChanges.push({
+                        id: note.id,
+                        title: note.title,
+                        localColor: note.color || 'predeterminado',
+                        cloudColor: cloudNote.color || 'predeterminado',
+                        recommended: (cloudNote.timestamp || 0) > note.timestamp ? 'cloud' : 'local'
+                    });
+                }
+            }
+            
+            // 4. Conflictos de contenido
+            const contentConflicts = [];
+            for (const id in cloudNotes) {
+                const cloudNote = cloudNotes[id];
+                const localIdx = notes.findIndex(n => n.id === id);
+                if (localIdx !== -1 && cloudNote.timestamp !== notes[localIdx].timestamp) {
+                    const localNote = notes[localIdx];
+                    contentConflicts.push({
+                        id: id,
+                        title: localNote.title,
+                        localContent: localNote.content,
+                        cloudContent: cloudNote.content,
+                        localDate: localNote.date,
+                        cloudDate: cloudNote.date,
+                        recommended: cloudNote.timestamp > localNote.timestamp ? 'cloud' : 'local'
+                    });
+                }
+            }
+            
+            return { deletedNotes, classChanges, colorChanges, contentConflicts };
+        }
+        
+        function renderUnifiedModal(data) {
+            const container = document.getElementById('sync-sections-container');
+            container.innerHTML = '';
+            
+            // Sección de notas eliminadas
+            if (data.deletedNotes.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `
+                    <h4>🗑️ Eliminación de notas</h4>
+                    <div id="deleted-notes-list"></div>
+                `;
+                const listDiv = section.querySelector('#deleted-notes-list');
+                data.deletedNotes.forEach(note => {
+                    const item = document.createElement('div');
+                    item.className = 'sync-item';
+                    item.innerHTML = `
+                        <div><strong>${escapeHtml(note.title)}</strong></div>
+                        <div class="sync-option-group">
+                            <label class="sync-option ${note.recommended === 'delete' ? 'recommended' : ''}">
+                                <input type="radio" name="del_${note.id}" value="delete" ${note.recommended === 'delete' ? 'checked' : ''}> 🗑️ Eliminar
+                            </label>
+                            <label class="sync-option ${note.recommended === 'keep' ? 'recommended' : ''}">
+                                <input type="radio" name="del_${note.id}" value="keep" ${note.recommended === 'keep' ? 'checked' : ''}> 💾 Conservar
+                            </label>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
+                container.appendChild(section);
+            }
+            
+            // Sección de clases
+            if (data.classChanges) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `
+                    <h4>📁 Clases</h4>
+                    <div class="sync-item">
+                        <div><span class="badge badge-cloud">☁️ Nube</span> ${data.classChanges.cloud.join(', ')}</div>
+                        <div><span class="badge badge-local">💾 Local</span> ${data.classChanges.local.join(', ')}</div>
+                        <div class="sync-option-group" style="margin-top: 10px;">
+                            <label class="sync-option ${data.classChanges.recommended === 'cloud' ? 'recommended' : ''}">
+                                <input type="radio" name="class_choice" value="cloud" ${data.classChanges.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar nube
+                            </label>
+                            <label class="sync-option ${data.classChanges.recommended === 'local' ? 'recommended' : ''}">
+                                <input type="radio" name="class_choice" value="local" ${data.classChanges.recommended === 'local' ? 'checked' : ''}> 💾 Mantener local
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(section);
+            }
+            
+            // Sección de colores
+            if (data.colorChanges.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `<h4>🎨 Colores</h4><div id="colors-list"></div>`;
+                const listDiv = section.querySelector('#colors-list');
+                data.colorChanges.forEach(color => {
+                    const item = document.createElement('div');
+                    item.className = 'sync-item';
+                    item.innerHTML = `
+                        <div><strong>${escapeHtml(color.title)}</strong></div>
+                        <div>
+                            <span class="badge badge-cloud">☁️ Nube</span>
+                            <span class="color-preview-small" style="background-color: ${color.cloudColor !== 'predeterminado' ? color.cloudColor : '#242424'}"></span>
+                            ${color.cloudColor}
+                        </div>
+                        <div>
+                            <span class="badge badge-local">💾 Local</span>
+                            <span class="color-preview-small" style="background-color: ${color.localColor !== 'predeterminado' ? color.localColor : '#242424'}"></span>
+                            ${color.localColor}
+                        </div>
+                        <div class="sync-option-group">
+                            <label class="sync-option ${color.recommended === 'cloud' ? 'recommended' : ''}">
+                                <input type="radio" name="color_${color.id}" value="cloud" ${color.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar nube
+                            </label>
+                            <label class="sync-option ${color.recommended === 'local' ? 'recommended' : ''}">
+                                <input type="radio" name="color_${color.id}" value="local" ${color.recommended === 'local' ? 'checked' : ''}> 💾 Mantener local
+                            </label>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
+                container.appendChild(section);
+            }
+            
+            // Sección de conflictos de texto
+            if (data.contentConflicts.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `<h4>📝 Texto</h4><div id="content-list"></div>`;
+                const listDiv = section.querySelector('#content-list');
+                data.contentConflicts.forEach(conflict => {
+                    const item = document.createElement('div');
+                    item.className = 'sync-item';
+                    item.innerHTML = `
+                        <div><strong>${escapeHtml(conflict.title)}</strong></div>
+                        <div>
+                            <span class="badge badge-cloud">☁️ Nube</span>
+                            <div class="preview-text">${escapeHtml(truncateText(conflict.cloudContent, 80))}</div>
+                            <small>${conflict.cloudDate}</small>
+                        </div>
+                        <div>
+                            <span class="badge badge-local">💾 Local</span>
+                            <div class="preview-text">${escapeHtml(truncateText(conflict.localContent, 80))}</div>
+                            <small>${conflict.localDate}</small>
+                        </div>
+                        <div class="sync-option-group">
+                            <label class="sync-option ${conflict.recommended === 'cloud' ? 'recommended' : ''}">
+                                <input type="radio" name="content_${conflict.id}" value="cloud" ${conflict.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar nube
+                            </label>
+                            <label class="sync-option ${conflict.recommended === 'local' ? 'recommended' : ''}">
+                                <input type="radio" name="content_${conflict.id}" value="local" ${conflict.recommended === 'local' ? 'checked' : ''}> 💾 Mantener local
+                            </label>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
+                container.appendChild(section);
+            }
+            
+            // Botón marcar todo
+            document.getElementById('mark-all-recommended').onclick = () => {
+                document.querySelectorAll('#sync-sections-container input[type="radio"]').forEach(radio => {
+                    const parent = radio.closest('.sync-option');
+                    if (parent && parent.classList.contains('recommended')) {
+                        radio.checked = true;
+                    }
+                });
+            };
+        }
+        
+        async function processSyncDecisions(data) {
+            // Procesar eliminaciones
+            for (const note of data.deletedNotes) {
+                const choice = document.querySelector(`input[name="del_${note.id}"]:checked`)?.value;
+                if (choice === 'delete') {
+                    const index = notes.findIndex(n => n.id === note.id);
+                    if (index !== -1) {
+                        addToDeletedLog(note.id);
+                        await db.ref('notes/' + note.id).remove();
+                        notes.splice(index, 1);
+                    }
+                }
+            }
+            
+            // Procesar clases
+            const classChoice = document.querySelector('input[name="class_choice"]:checked')?.value;
+            if (classChoice === 'cloud' && data.classChanges) {
+                classes = [...data.classChanges.cloud];
+                if (!classes.includes(currentClass)) currentClass = classes[0];
+                saveClasses();
+                await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
+            } else if (classChoice === 'local' && data.classChanges) {
+                await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
+            }
+            
+            // Procesar colores
+            for (const color of data.colorChanges) {
+                const choice = document.querySelector(`input[name="color_${color.id}"]:checked`)?.value;
+                const noteIndex = notes.findIndex(n => n.id === color.id);
+                if (noteIndex !== -1) {
+                    if (choice === 'cloud') {
+                        notes[noteIndex].color = color.cloudColor !== 'predeterminado' ? color.cloudColor : undefined;
+                    } else {
+                        notes[noteIndex].color = color.localColor !== 'predeterminado' ? color.localColor : undefined;
+                    }
+                    if (notes[noteIndex].color === undefined) delete notes[noteIndex].color;
+                    await db.ref('notes/' + color.id).update({ color: notes[noteIndex].color || null });
+                }
+            }
+            
+            // Procesar conflictos de contenido
+            for (const conflict of data.contentConflicts) {
+                const choice = document.querySelector(`input[name="content_${conflict.id}"]:checked`)?.value;
+                const noteIndex = notes.findIndex(n => n.id === conflict.id);
+                if (noteIndex !== -1) {
+                    if (choice === 'cloud') {
+                        const cloudNote = (await db.ref('notes/' + conflict.id).once('value')).val();
+                        if (cloudNote) notes[noteIndex] = cloudNote;
+                    }
+                    notes[noteIndex].synced = true;
+                    await db.ref('notes/' + conflict.id).set(notes[noteIndex]);
+                }
+            }
+            
+            saveToLocal();
+            renderNotes();
+            renderClasses();
+        }
+        
+        async function tryConnect() {
+            if (!navigator.onLine) {
+                alert("Sin conexión.");
                 return;
             }
             
-            if (confirm(`¿Eliminar la clase "${cls}"? También se borrarán TODAS las notas de esta clase.`)) {
-                notes = notes.filter(n => n.clase !== cls);
-                classes = classes.filter(c => c !== cls);
+            const btn = document.getElementById('btn-connect');
+            btn.innerText = "Detectando cambios..."; 
+            btn.className = "syncing";
+            
+            isOnline = true;
+            
+            // Obtener datos de sincronización
+            const syncDataResult = await fetchSyncData();
+            
+            // Si hay cambios, mostrar modal unificado
+            if (syncDataResult.deletedNotes.length > 0 || 
+                syncDataResult.classChanges || 
+                syncDataResult.colorChanges.length > 0 || 
+                syncDataResult.contentConflicts.length > 0) {
                 
-                if (currentClass === cls) {
-                    currentClass = classes[0];
-                }
+                renderUnifiedModal(syncDataResult);
+                toggleModal('modal-unified-sync', true);
                 
-                saveClasses();
-                saveToLocal();
-                renderClassesList();
-                renderNotes();
-                renderClasses();
-                
-                // Subir cambios a la nube si estamos online
-                if (isOnline) {
-                    await uploadClassesToCloud();
-                    
-                    // También eliminar notas de la clase de la nube
-                    for (const note of notes.filter(n => n.clase === cls)) {
-                        await db.ref('notes/' + note.id).remove();
-                    }
-                }
-            }
-        }
-
-        // Funciones para drag & drop de clases
-        function dragStart(e, index) {
-            draggedItem = index;
-            e.target.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-        }
-
-        function dragOver(e, index) {
-            e.preventDefault();
-            e.target.closest('.class-item')?.classList.add('drag-over');
-        }
-
-        function dragLeave(e) {
-            e.target.closest('.class-item')?.classList.remove('drag-over');
-        }
-
-        async function drop(e, targetIndex) {
-            e.preventDefault();
-            const sourceIndex = draggedItem;
-            
-            if (sourceIndex === null || sourceIndex === targetIndex) return;
-            
-            const [removed] = classes.splice(sourceIndex, 1);
-            classes.splice(targetIndex, 0, removed);
-            
-            saveClasses();
-            renderClassesList();
-            renderClasses();
-            
-            // Subir nuevo orden a la nube
-            if (isOnline) {
-                await uploadClassesToCloud();
-            }
-            
-            document.querySelectorAll('.class-item').forEach(item => {
-                item.classList.remove('drag-over', 'dragging');
-            });
-            
-            draggedItem = null;
-        }
-
-        function dragEnd(e) {
-            document.querySelectorAll('.class-item').forEach(item => {
-                item.classList.remove('drag-over', 'dragging');
-            });
-            draggedItem = null;
-        }
-
-        function renderClassesList() {
-            const list = document.getElementById('classes-list');
-            if (!list) return;
-            
-            list.innerHTML = '';
-            classes.forEach((cls, index) => {
-                const div = document.createElement('div');
-                div.className = 'class-item';
-                div.setAttribute('draggable', 'true');
-                div.setAttribute('data-index', index);
-                
-                div.addEventListener('dragstart', (e) => dragStart(e, index));
-                div.addEventListener('dragover', (e) => dragOver(e, index));
-                div.addEventListener('dragleave', dragLeave);
-                div.addEventListener('drop', (e) => drop(e, index));
-                div.addEventListener('dragend', dragEnd);
-                
-                div.innerHTML = `
-                    <div class="class-item-left">
-                        <span class="drag-handle">⋮⋮</span>
-                        <span class="class-name">${cls}</span>
-                    </div>
-                    <button class="delete-class" onclick="deleteClass('${cls}')">Eliminar</button>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function renderClassSelector() {
-            const selector = document.getElementById('class-select-list');
-            if (!selector) return;
-            
-            selector.innerHTML = '';
-            classes.forEach(cls => {
-                const div = document.createElement('div');
-                div.className = 'class-item';
-                div.style.cursor = 'pointer';
-                div.onclick = () => {
-                    if (currentNoteIndex !== null) {
-                        notes[currentNoteIndex].clase = cls;
-                        saveToLocal();
-                        
-                        if (isOnline) {
-                            finishSync();
-                        }
-                    }
-                    toggleModal('modal-class-select', false);
+                // Configurar botones
+                document.getElementById('process-all-btn').onclick = async () => {
+                    await processSyncDecisions(syncDataResult);
+                    toggleModal('modal-unified-sync', false);
+                    btn.innerText = "En Línea"; 
+                    btn.className = "online";
                 };
-                div.innerHTML = `
-                    <span>${cls}</span>
-                    ${currentNoteIndex !== null && notes[currentNoteIndex].clase === cls ? '✓' : ''}
-                `;
-                selector.appendChild(div);
-            });
-        }
-
-        async function tryConnect() {
-            if (navigator.onLine) {
-                const btn = document.getElementById('btn-connect');
-                btn.innerText = "Sincronizando..."; 
-                btn.className = "syncing";
                 
-                isOnline = true;
-                
-                // Sincronizar clases primero
-                await syncClassesFromCloud();
-                
-                // Luego sincronizar notas
+                document.getElementById('cancel-sync-btn').onclick = () => {
+                    toggleModal('modal-unified-sync', false);
+                    btn.innerText = "Conectar"; 
+                    btn.className = "offline";
+                    isOnline = false;
+                };
+            } else {
+                // No hay cambios, conectar directamente
                 await syncProcess();
-                
                 btn.innerText = "En Línea"; 
                 btn.className = "online";
-            } else { 
-                alert("Sin conexión."); 
             }
         }
 
         async function syncProcess() {
             if (!isOnline) return;
-            
-            conflictsQueue = [];
             const snapshot = await db.ref('notes').once('value');
             const cloudNotes = snapshot.val() || {};
-
             for (const id in cloudNotes) {
                 const cloudNote = cloudNotes[id];
                 const localIdx = notes.findIndex(n => n.id === id);
-                
                 if (localIdx === -1) {
                     notes.push(cloudNote);
-                } else {
-                    if (cloudNote.timestamp !== notes[localIdx].timestamp) {
-                        conflictsQueue.push({ localIdx, cloudNote });
-                    }
                 }
             }
-
-            if (conflictsQueue.length > 0) {
-                showNextConflict();
-            } else {
-                finishSync();
-            }
-        }
-
-        function showNextConflict() {
-            if (conflictsQueue.length === 0) {
-                toggleModal('modal-conflict', false);
-                finishSync();
-                return;
-            }
-
-            const { localIdx, cloudNote } = conflictsQueue[0];
-            const localNote = notes[localIdx];
-            
-            document.getElementById('conflict-count').innerText = `Tienes ${conflictsQueue.length} notas con versiones distintas.`;
-            document.getElementById('conflict-note-title').innerText = localNote.title;
-            
-            const isCloudNewer = cloudNote.timestamp > localNote.timestamp;
-            document.getElementById('rec-cloud').innerText = isCloudNewer ? "★ RECOMENDADA" : "";
-            document.getElementById('option-cloud').className = isCloudNewer ? "conflict-box recommended-border" : "conflict-box";
-            document.getElementById('rec-local').innerText = !isCloudNewer ? "★ RECOMENDADA" : "";
-            document.getElementById('option-local').className = !isCloudNewer ? "conflict-box recommended-border" : "conflict-box";
-
-            document.getElementById('cloud-date').innerText = cloudNote.date;
-            document.getElementById('cloud-preview').innerText = cloudNote.content.substring(0, 50) + "...";
-            document.getElementById('local-date').innerText = localNote.date;
-            document.getElementById('local-preview').innerText = localNote.content.substring(0, 50) + "...";
-
-            document.getElementById('option-cloud').onclick = () => resolveManual('cloud');
-            document.getElementById('option-local').onclick = () => resolveManual('local');
-            
-            toggleModal('modal-conflict', true);
-        }
-
-        async function resolveManual(choice) {
-            const { localIdx, cloudNote } = conflictsQueue.shift();
-            if (choice === 'cloud') {
-                notes[localIdx] = cloudNote;
-                notes[localIdx].synced = true;
-            } else {
-                notes[localIdx].synced = false;
-            }
-            saveToLocal();
-            showNextConflict();
-        }
-
-        async function resolveAllRecommended() {
-            while (conflictsQueue.length > 0) {
-                const { localIdx, cloudNote } = conflictsQueue.shift();
-                const localNote = notes[localIdx];
-                if (cloudNote.timestamp > localNote.timestamp) {
-                    notes[localIdx] = cloudNote;
-                    notes[localIdx].synced = true;
-                } else {
-                    notes[localIdx].synced = false;
-                }
-            }
-            toggleModal('modal-conflict', false);
-            saveToLocal();
-            finishSync();
+            await finishSync();
         }
 
         async function finishSync() {
@@ -889,31 +1260,24 @@
                     await db.ref('notes/' + notes[i].id).set(notes[i]);
                 }
             }
+            await uploadNotesOrderToCloud();
             saveAndRender();
         }
 
         function saveNote() {
             const now = new Date();
             const id = currentNoteIndex !== null ? notes[currentNoteIndex].id : "ID_" + Date.now();
-            
-            const noteClass = currentNoteIndex !== null ? 
-                (notes[currentNoteIndex].clase || currentClass) : 
-                currentClass;
-            
+            const noteClass = currentNoteIndex !== null ? (notes[currentNoteIndex].clase || currentClass) : currentClass;
             const noteData = {
-                id, 
-                clase: noteClass,
+                id, clase: noteClass,
                 title: document.getElementById('edit-title').value || 'Sin título',
                 content: document.getElementById('edit-content').value,
                 summary: document.getElementById('edit-summary').value,
-                date: now.toLocaleString(), 
-                timestamp: now.getTime(), 
-                synced: false
+                date: now.toLocaleString(), timestamp: now.getTime(), synced: false
             };
-            
+            if (currentNoteIndex !== null && notes[currentNoteIndex].color) noteData.color = notes[currentNoteIndex].color;
             if (currentNoteIndex === null) notes.unshift(noteData);
             else notes[currentNoteIndex] = noteData;
-            
             saveToLocal();
             if (isOnline) finishSync();
             showLobby();
@@ -921,62 +1285,88 @@
 
         async function deleteNote(index) {
             if (!isOnline) return;
+            const noteId = notes[index].id;
             if (confirm("¿Borrar de la nube?")) {
-                await db.ref('notes/' + notes[index].id).remove();
+                addToDeletedLog(noteId);
+                await db.ref('notes/' + noteId).remove();
                 notes.splice(index, 1);
+                await uploadNotesOrderToCloud();
                 saveAndRender();
             }
         }
 
-        function saveToLocal() { 
-            localStorage.setItem('zen_v3', JSON.stringify(notes)); 
-        }
+        function saveToLocal() { localStorage.setItem('zen_v3', JSON.stringify(notes)); }
+        function saveAndRender() { saveToLocal(); renderNotes(); }
+        function toggleModal(id, s) { document.getElementById(id).style.display = s ? 'block' : 'none'; }
+        function showView(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function showLobby() { renderNotes(); showView('view-lobby'); }
         
-        function saveAndRender() { 
-            saveToLocal(); 
-            renderNotes(); 
-        }
-        
-        function toggleModal(id, s) { 
-            document.getElementById(id).style.display = s ? 'block' : 'none';
-            if (id === 'modal-class-manager' && s) {
-                renderClassesList();
-            }
-            if (id === 'modal-class-select' && s) {
-                renderClassSelector();
-            }
-        }
-        
-        function showView(id) { 
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-        
-        function showLobby() { 
-            renderNotes(); 
-            showView('view-lobby'); 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
         }
         
         function renderNotes() {
             const list = document.getElementById('notes-list');
+            if (!list) return;
             list.innerHTML = '';
-            
-            const filteredNotes = notes.filter(n => n.clase === currentClass || !n.clase);
-            filteredNotes.sort((a,b) => b.timestamp - a.timestamp);
-            
-            filteredNotes.forEach((n, i) => {
+            let filteredNotes = notes.filter(n => n.clase === currentClass || (!n.clase && currentClass === classes[0]));
+            filteredNotes.forEach((n) => {
                 const originalIndex = notes.findIndex(note => note.id === n.id);
-                
+                const bgColor = n.color || '#242424';
+                const textColor = getContrastColor(bgColor);
                 const div = document.createElement('div');
                 div.className = 'note-card';
-                div.innerHTML = `<div onclick="openNote('${n.id}')" style="cursor:pointer">
-                    <h3>${n.title} ${n.synced ? '' : '<span class="sync-warn">⚠️ Local</span>'}</h3>
-                    <small>${n.date}</small>
-                    <span class="note-class-tag">${n.clase || 'tareas'}</span>
+                div.setAttribute('data-note-id', n.id);
+                div.setAttribute('draggable', 'true');
+                div.style.backgroundColor = bgColor;
+                div.style.color = textColor;
+                div.addEventListener('dragstart', (e) => noteDragStart(e, n.id));
+                div.addEventListener('dragover', (e) => noteDragOver(e, n.id));
+                div.addEventListener('dragleave', noteDragLeave);
+                div.addEventListener('drop', (e) => noteDrop(e, n.id));
+                div.addEventListener('dragend', noteDragEnd);
+                let previewHtml = '';
+                if (showPreview && n.content) {
+                    const truncatedContent = truncateText(n.content, 80);
+                    previewHtml = `<div class="note-preview">${escapeHtml(truncatedContent)}</div>`;
+                }
+                let dateHtml = '';
+                if (showDate && n.date) {
+                    dateHtml = `<div class="note-date">📅 ${escapeHtml(n.date)}</div>`;
+                }
+                div.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-content" onclick="openNote('${n.id}')">
+                            <h3>${escapeHtml(n.title)} ${n.synced ? '' : '<span class="sync-warn">⚠️ Local</span>'}</h3>
+                            ${dateHtml}
+                            ${previewHtml}
+                            <span class="note-class-tag">${escapeHtml(n.clase || 'tareas')}</span>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <div class="drag-note-handle" title="Arrastrar para reordenar">⋮⋮</div>
+                            <button class="color-btn" onclick="event.stopPropagation(); openColorModal('${n.id}')" style="color: ${textColor};">🎨</button>
+                        </div>
                     </div>
-                    <div class="card-actions">
-                    <button class="btn-sm" onclick="copyNote('${n.id}')">Copiar</button>
-                    <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${originalIndex})">Borrar</button></div>`;
+                    <div class="card-actions" onclick="event.stopPropagation()">
+                        <div class="action-buttons">
+                            <button class="btn-sm" onclick="copyNote('${n.id}')">Copiar</button>
+                            <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${originalIndex})">Borrar</button>
+                        </div>
+                    </div>
+                `;
+                const btns = div.querySelectorAll('.btn-sm, .color-btn, .drag-note-handle');
+                btns.forEach(btn => { btn.style.color = textColor; btn.style.borderColor = textColor + '40'; });
+                const tag = div.querySelector('.note-class-tag');
+                if (tag) {
+                    tag.style.backgroundColor = textColor === '#000000' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+                    tag.style.color = textColor;
+                }
                 list.appendChild(div);
             });
         }
@@ -984,12 +1374,7 @@
         function copyNote(id) { 
             const note = notes.find(n => n.id === id);
             if (note) {
-                let textToCopy;
-                if (copyWithTitle) {
-                    textToCopy = note.title + "\n\n" + note.content;
-                } else {
-                    textToCopy = note.content;
-                }
+                const textToCopy = copyWithTitle ? note.title + "\n\n" + note.content : note.content;
                 navigator.clipboard.writeText(textToCopy); 
                 alert(copyWithTitle ? "Copiado con título." : "Copiado sin título.");
             }
@@ -1020,7 +1405,182 @@
             showView('view-edit'); 
         }
 
-        // Inicializar
+        function saveClasses() {
+            localStorage.setItem('zen_classes', JSON.stringify(classes));
+            localStorage.setItem('zen_current_class', currentClass);
+            renderClasses();
+        }
+
+        async function uploadClassesToCloud() {
+            if (!isOnline) return;
+            await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
+        }
+
+        function renderClasses() {
+            const bar = document.getElementById('classes-bar');
+            if (!bar) return;
+            let html = '';
+            classes.forEach(cls => {
+                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls}')">${escapeHtml(cls)}</button>`;
+            });
+            html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
+            bar.innerHTML = html;
+        }
+
+        function selectClass(cls) {
+            currentClass = cls;
+            saveClasses();
+            renderNotes();
+        }
+
+        async function addNewClass() {
+            const input = document.getElementById('new-class-name');
+            const newClass = input.value.trim().toLowerCase();
+            if (newClass && !classes.includes(newClass)) {
+                classes.push(newClass);
+                saveClasses();
+                renderClassesList();
+                renderClasses();
+                input.value = '';
+                if (isOnline) await uploadClassesToCloud();
+            } else if (classes.includes(newClass)) {
+                alert('Esta clase ya existe');
+            }
+        }
+
+        async function deleteClass(cls) {
+            if (classes.length <= 1) {
+                alert('Debe haber al menos una clase');
+                return;
+            }
+            if (confirm(`¿Eliminar la clase "${cls}"? También se borrarán TODAS las notas de esta clase.`)) {
+                notes = notes.filter(n => n.clase !== cls);
+                classes = classes.filter(c => c !== cls);
+                if (currentClass === cls) currentClass = classes[0];
+                saveClasses();
+                saveToLocal();
+                renderClassesList();
+                renderNotes();
+                renderClasses();
+                if (isOnline) await uploadClassesToCloud();
+            }
+        }
+
+        function classDragStart(e, index) {
+            draggedClassItem = index;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', index);
+        }
+
+        function classDragOver(e, index) {
+            e.preventDefault();
+            e.target.closest('.class-item')?.classList.add('drag-over');
+        }
+
+        function classDragLeave(e) {
+            e.target.closest('.class-item')?.classList.remove('drag-over');
+        }
+
+        async function classDrop(e, targetIndex) {
+            e.preventDefault();
+            if (draggedClassItem !== null && draggedClassItem !== targetIndex) {
+                const [removed] = classes.splice(draggedClassItem, 1);
+                classes.splice(targetIndex, 0, removed);
+                saveClasses();
+                renderClassesList();
+                renderClasses();
+                if (isOnline) await uploadClassesToCloud();
+            }
+            document.querySelectorAll('.class-item').forEach(item => {
+                item.classList.remove('drag-over', 'dragging');
+            });
+            draggedClassItem = null;
+        }
+
+        function classDragEnd(e) {
+            document.querySelectorAll('.class-item').forEach(item => {
+                item.classList.remove('drag-over', 'dragging');
+            });
+            draggedClassItem = null;
+        }
+
+        function renderClassesList() {
+            const list = document.getElementById('classes-list');
+            if (!list) return;
+            list.innerHTML = '';
+            classes.forEach((cls, index) => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                div.setAttribute('draggable', 'true');
+                div.addEventListener('dragstart', (e) => classDragStart(e, index));
+                div.addEventListener('dragover', (e) => classDragOver(e, index));
+                div.addEventListener('dragleave', classDragLeave);
+                div.addEventListener('drop', (e) => classDrop(e, index));
+                div.addEventListener('dragend', classDragEnd);
+                div.innerHTML = `
+                    <div class="class-item-left">
+                        <span class="drag-handle">⋮⋮</span>
+                        <span class="class-name">${escapeHtml(cls)}</span>
+                    </div>
+                    <button class="delete-class" onclick="deleteClass('${cls}')">Eliminar</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderClassSelector() {
+            const selector = document.getElementById('class-select-list');
+            if (!selector) return;
+            selector.innerHTML = '';
+            classes.forEach(cls => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                div.style.cursor = 'pointer';
+                div.onclick = () => {
+                    if (currentNoteIndex !== null) {
+                        notes[currentNoteIndex].clase = cls;
+                        saveToLocal();
+                        if (isOnline) finishSync();
+                    }
+                    toggleModal('modal-class-select', false);
+                };
+                div.innerHTML = `<span>${escapeHtml(cls)}</span>${currentNoteIndex !== null && notes[currentNoteIndex].clase === cls ? ' ✓' : ''}`;
+                selector.appendChild(div);
+            });
+        }
+
+        function applySettings() {
+            const copyBtn = document.getElementById('btn-copy-mode');
+            if (copyBtn) copyBtn.innerText = copyWithTitle ? '📋 +título' : '📋 -título';
+            const previewBtn = document.getElementById('btn-preview-mode');
+            if (previewBtn) previewBtn.innerText = showPreview ? '📄 +contenido' : '📄 -contenido';
+            const dateBtn = document.getElementById('btn-date-mode');
+            if (dateBtn) dateBtn.innerText = showDate ? '📅 +fecha' : '📅 -fecha';
+            document.body.className = `size-${noteSize}`;
+            ['large', 'medium', 'compact'].forEach(size => {
+                const el = document.getElementById(`size-${size}`);
+                if (el) {
+                    if (size === noteSize) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+        }
+
+        function toggleCopyMode() {
+            copyWithTitle = !copyWithTitle;
+            localStorage.setItem('zen_copy_mode', copyWithTitle);
+            applySettings();
+        }
+
+        function setNoteSize(size) {
+            noteSize = size;
+            localStorage.setItem('zen_note_size', size);
+            applySettings();
+            renderNotes();
+            toggleModal('modal-size', false);
+        }
+
         applySettings();
         renderClasses();
         renderNotes();
