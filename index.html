@@ -74,10 +74,12 @@
             display: flex;
             gap: 8px;
         }
-        #btn-connect { padding: 6px 14px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
-        .offline { background: var(--danger); color: white; }
-        .online { background: var(--success); color: white; }
-        .syncing { background: var(--warning); color: black; }
+        #btn-connect, #btn-upload, #btn-load { padding: 6px 14px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        #btn-connect.offline { background: var(--danger); color: white; }
+        #btn-connect.online { background: var(--success); color: white; }
+        #btn-connect.syncing { background: var(--warning); color: black; }
+        #btn-upload { background: var(--accent); color: white; }
+        #btn-load { background: var(--warning); color: black; }
         
         .btn-icon {
             background: var(--surface);
@@ -476,6 +478,35 @@
             top: auto !important;
             transform: none !important;
         }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            margin-top: 20px;
+            color: var(--text-main);
+        }
     </style>
 </head>
 <body class="size-medium">
@@ -491,6 +522,8 @@
             <div class="status-right">
                 <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño</button>
                 <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
+                <button id="btn-upload" onclick="uploadToSecureFolder()">📤 Subir</button>
+                <button id="btn-load" onclick="showLoadConfirm()">📥 Cargar</button>
             </div>
         </div>
         
@@ -600,6 +633,26 @@
             <button class="btn" style="width:100%; margin-top:20px;" onclick="toggleModal('modal-size', false)">Cerrar</button>
         </div>
     </div>
+    
+    <!-- Modal de confirmación para cargar backup -->
+    <div id="modal-load-confirm" class="modal">
+        <div class="modal-content">
+            <h3 style="color: var(--danger);">⚠️ ADVERTENCIA</h3>
+            <p>Esta acción <strong>REEMPLAZARÁ TODOS LOS DATOS</strong> locales con el backup de la nube.</p>
+            <p>Tus notas actuales serán <strong>ELIMINADAS</strong> y reemplazadas por las de "carpeta_segura".</p>
+            <p style="color: var(--warning);">Esta operación no se puede deshacer.</p>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-primary" onclick="loadFromSecureFolder()">✅ Confirmar y cargar</button>
+                <button class="btn-secondary" onclick="toggleModal('modal-load-confirm', false)">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">Procesando...</div>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -650,6 +703,18 @@
 
         let draggedClassItem = null;
         let draggedNoteId = null;
+
+        function showLoading(text = 'Procesando...') {
+            const overlay = document.getElementById('loading-overlay');
+            const textEl = document.getElementById('loading-text');
+            textEl.innerText = text;
+            overlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.display = 'none';
+        }
 
         function getContrastColor(hexcolor) {
             if (!hexcolor || hexcolor === '#242424') return '#d1d1d1';
@@ -927,6 +992,95 @@
             await db.ref('metadata/notes_order').set(orderData);
         }
 
+        // ==================== Funciones de carpeta_segura ====================
+        async function uploadToSecureFolder() {
+            if (!isOnline) {
+                alert('No estás conectado. Conéctate primero.');
+                return;
+            }
+            
+            showLoading('Subiendo backup a carpeta_segura...');
+            
+            try {
+                const backupData = {
+                    notes: notes,
+                    classes: classes,
+                    deletedNotesLog: deletedNotesLog,
+                    recentColors: recentColors,
+                    timestamp: Date.now(),
+                    version: '1.0'
+                };
+                
+                await db.ref('carpeta_segura/backup').set(backupData);
+                await db.ref('carpeta_segura/metadata').set({
+                    lastBackup: Date.now(),
+                    noteCount: notes.length,
+                    classCount: classes.length
+                });
+                
+                alert('✅ Backup guardado exitosamente en carpeta_segura');
+            } catch (error) {
+                console.error('Error al subir backup:', error);
+                alert('❌ Error al subir backup: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function showLoadConfirm() {
+            if (!isOnline) {
+                alert('No estás conectado. Conéctate primero.');
+                return;
+            }
+            toggleModal('modal-load-confirm', true);
+        }
+        
+        async function loadFromSecureFolder() {
+            toggleModal('modal-load-confirm', false);
+            showLoading('Cargando backup desde carpeta_segura...');
+            
+            try {
+                const snapshot = await db.ref('carpeta_segura/backup').once('value');
+                const backupData = snapshot.val();
+                
+                if (!backupData) {
+                    alert('No se encontró ningún backup en carpeta_segura. Sube uno primero.');
+                    hideLoading();
+                    return;
+                }
+                
+                // Reemplazar todos los datos locales
+                notes = backupData.notes || [];
+                classes = backupData.classes || ['tareas', 'comidas', 'links'];
+                deletedNotesLog = backupData.deletedNotesLog || [];
+                recentColors = backupData.recentColors || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6'];
+                
+                // Asegurar que currentClass exista en las nuevas clases
+                if (!classes.includes(currentClass)) {
+                    currentClass = classes[0];
+                }
+                
+                // Guardar en localStorage
+                saveToLocal();
+                localStorage.setItem('zen_classes', JSON.stringify(classes));
+                localStorage.setItem('zen_current_class', currentClass);
+                localStorage.setItem('zen_deleted_log', JSON.stringify(deletedNotesLog));
+                localStorage.setItem('zen_recent_colors', JSON.stringify(recentColors));
+                
+                // Renderizar UI
+                renderClasses();
+                renderNotes();
+                applySettings();
+                
+                alert(`✅ Backup cargado exitosamente.\nNotas: ${notes.length}\nClases: ${classes.length}`);
+            } catch (error) {
+                console.error('Error al cargar backup:', error);
+                alert('❌ Error al cargar backup: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
         // ==================== Sincronización Unificada ====================
         async function fetchSyncData() {
             const snapshot = await db.ref('notes').once('value');
@@ -944,7 +1098,11 @@
                 for (const id of cloudDeleted.list) {
                     if (notes.find(n => n.id === id)) {
                         const note = notes.find(n => n.id === id);
-                        deletedNotes.push({ id, title: note?.title || id });
+                        deletedNotes.push({ 
+                            id, 
+                            title: note?.title || id,
+                            recommended: 'delete'
+                        });
                     }
                 }
             }
@@ -1039,8 +1197,8 @@
                 section.innerHTML = `
                     <h4>📁 Clases</h4>
                     <div class="sync-item">
-                        <div><span class="badge badge-cloud">☁️ Nube</span> ${data.classChanges.cloud.join(', ')}</div>
-                        <div><span class="badge badge-local">💾 Local</span> ${data.classChanges.local.join(', ')}</div>
+                        <div><span class="badge badge-cloud">☁️ Nube</span> ${escapeHtml(data.classChanges.cloud.join(', '))}</div>
+                        <div><span class="badge badge-local">💾 Local</span> ${escapeHtml(data.classChanges.local.join(', '))}</div>
                         <div class="sync-option-group" style="margin-top: 10px;">
                             <label class="sync-option ${data.classChanges.recommended === 'cloud' ? 'recommended' : ''}">
                                 <input type="radio" name="class_choice" value="cloud" ${data.classChanges.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar nube
@@ -1103,12 +1261,12 @@
                         <div>
                             <span class="badge badge-cloud">☁️ Nube</span>
                             <div class="preview-text">${escapeHtml(truncateText(conflict.cloudContent, 80))}</div>
-                            <small>${conflict.cloudDate}</small>
+                            <small>${escapeHtml(conflict.cloudDate)}</small>
                         </div>
                         <div>
                             <span class="badge badge-local">💾 Local</span>
                             <div class="preview-text">${escapeHtml(truncateText(conflict.localContent, 80))}</div>
-                            <small>${conflict.localDate}</small>
+                            <small>${escapeHtml(conflict.localDate)}</small>
                         </div>
                         <div class="sync-option-group">
                             <label class="sync-option ${conflict.recommended === 'cloud' ? 'recommended' : ''}">
@@ -1206,37 +1364,45 @@
             
             isOnline = true;
             
-            // Obtener datos de sincronización
-            const syncDataResult = await fetchSyncData();
-            
-            // Si hay cambios, mostrar modal unificado
-            if (syncDataResult.deletedNotes.length > 0 || 
-                syncDataResult.classChanges || 
-                syncDataResult.colorChanges.length > 0 || 
-                syncDataResult.contentConflicts.length > 0) {
+            try {
+                // Obtener datos de sincronización
+                const syncDataResult = await fetchSyncData();
                 
-                renderUnifiedModal(syncDataResult);
-                toggleModal('modal-unified-sync', true);
-                
-                // Configurar botones
-                document.getElementById('process-all-btn').onclick = async () => {
-                    await processSyncDecisions(syncDataResult);
-                    toggleModal('modal-unified-sync', false);
+                // Si hay cambios, mostrar modal unificado
+                if (syncDataResult.deletedNotes.length > 0 || 
+                    syncDataResult.classChanges || 
+                    syncDataResult.colorChanges.length > 0 || 
+                    syncDataResult.contentConflicts.length > 0) {
+                    
+                    renderUnifiedModal(syncDataResult);
+                    toggleModal('modal-unified-sync', true);
+                    
+                    // Configurar botones
+                    document.getElementById('process-all-btn').onclick = async () => {
+                        await processSyncDecisions(syncDataResult);
+                        toggleModal('modal-unified-sync', false);
+                        btn.innerText = "En Línea"; 
+                        btn.className = "online";
+                    };
+                    
+                    document.getElementById('cancel-sync-btn').onclick = () => {
+                        toggleModal('modal-unified-sync', false);
+                        btn.innerText = "Conectar"; 
+                        btn.className = "offline";
+                        isOnline = false;
+                    };
+                } else {
+                    // No hay cambios, conectar directamente
+                    await syncProcess();
                     btn.innerText = "En Línea"; 
                     btn.className = "online";
-                };
-                
-                document.getElementById('cancel-sync-btn').onclick = () => {
-                    toggleModal('modal-unified-sync', false);
-                    btn.innerText = "Conectar"; 
-                    btn.className = "offline";
-                    isOnline = false;
-                };
-            } else {
-                // No hay cambios, conectar directamente
-                await syncProcess();
-                btn.innerText = "En Línea"; 
-                btn.className = "online";
+                }
+            } catch (error) {
+                console.error('Error en conexión:', error);
+                alert('Error al conectar: ' + error.message);
+                btn.innerText = "Conectar";
+                btn.className = "offline";
+                isOnline = false;
             }
         }
 
@@ -1298,7 +1464,10 @@
 
         function saveToLocal() { localStorage.setItem('zen_v3', JSON.stringify(notes)); }
         function saveAndRender() { saveToLocal(); renderNotes(); }
-        function toggleModal(id, s) { document.getElementById(id).style.display = s ? 'block' : 'none'; }
+        function toggleModal(id, s) { 
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = s ? 'block' : 'none';
+        }
         function showView(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLobby() { renderNotes(); showView('view-lobby'); }
         
@@ -1410,6 +1579,8 @@
             localStorage.setItem('zen_classes', JSON.stringify(classes));
             localStorage.setItem('zen_current_class', currentClass);
             renderClasses();
+            renderClassesList(); // Actualizar la lista de gestión
+            renderClassSelector(); // Actualizar el selector
         }
 
         async function uploadClassesToCloud() {
@@ -1422,7 +1593,7 @@
             if (!bar) return;
             let html = '';
             classes.forEach(cls => {
-                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls}')">${escapeHtml(cls)}</button>`;
+                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls.replace(/'/g, "\\'")}')">${escapeHtml(cls)}</button>`;
             });
             html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
             bar.innerHTML = html;
@@ -1446,6 +1617,8 @@
                 if (isOnline) await uploadClassesToCloud();
             } else if (classes.includes(newClass)) {
                 alert('Esta clase ya existe');
+            } else if (!newClass) {
+                alert('Ingresa un nombre para la clase');
             }
         }
 
@@ -1454,7 +1627,8 @@
                 alert('Debe haber al menos una clase');
                 return;
             }
-            if (confirm(`¿Eliminar la clase "${cls}"? También se borrarán TODAS las notas de esta clase.`)) {
+            const notesCount = notes.filter(n => n.clase === cls).length;
+            if (confirm(`⚠️ ¿Eliminar la clase "${cls}"?\nSe perderán ${notesCount} notas de esta clase.`)) {
                 notes = notes.filter(n => n.clase !== cls);
                 classes = classes.filter(c => c !== cls);
                 if (currentClass === cls) currentClass = classes[0];
@@ -1469,7 +1643,7 @@
 
         function classDragStart(e, index) {
             draggedClassItem = index;
-            e.target.classList.add('dragging');
+            e.target.closest('.class-item')?.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', index);
         }
@@ -1524,7 +1698,7 @@
                         <span class="drag-handle">⋮⋮</span>
                         <span class="class-name">${escapeHtml(cls)}</span>
                     </div>
-                    <button class="delete-class" onclick="deleteClass('${cls}')">Eliminar</button>
+                    <button class="delete-class" onclick="deleteClass('${cls.replace(/'/g, "\\'")}')">Eliminar</button>
                 `;
                 list.appendChild(div);
             });
@@ -1538,17 +1712,24 @@
                 const div = document.createElement('div');
                 div.className = 'class-item';
                 div.style.cursor = 'pointer';
+                div.style.marginBottom = '8px';
                 div.onclick = () => {
                     if (currentNoteIndex !== null) {
                         notes[currentNoteIndex].clase = cls;
                         saveToLocal();
+                        renderNotes();
                         if (isOnline) finishSync();
                     }
                     toggleModal('modal-class-select', false);
                 };
-                div.innerHTML = `<span>${escapeHtml(cls)}</span>${currentNoteIndex !== null && notes[currentNoteIndex].clase === cls ? ' ✓' : ''}`;
+                const isSelected = currentNoteIndex !== null && notes[currentNoteIndex]?.clase === cls;
+                div.innerHTML = `<span>${escapeHtml(cls)}</span>${isSelected ? ' ✓' : ''}`;
                 selector.appendChild(div);
             });
+            
+            if (classes.length === 0) {
+                selector.innerHTML = '<p style="color: var(--text-dim);">No hay clases. Crea una en "Gestionar Clases"</p>';
+            }
         }
 
         function applySettings() {
@@ -1582,8 +1763,11 @@
             toggleModal('modal-size', false);
         }
 
+        // Inicialización
         applySettings();
         renderClasses();
+        renderClassesList();
+        renderClassSelector();
         renderNotes();
     </script>
 </body>
