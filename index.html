@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -122,6 +123,31 @@
         .class-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
         .class-btn.add { background: transparent; border: 1px dashed var(--border); color: var(--success); }
 
+        /* Estilo Contorno Arcoíris para Clases Maestras */
+        .class-btn.master {
+            border: 2px solid transparent;
+            background-image: linear-gradient(var(--surface), var(--surface)), 
+                              linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            background-size: 100% 100%, 400% 100%;
+            animation: rainbow-border 10s linear infinite;
+            padding: 6px 14px;
+        }
+
+        @keyframes rainbow-border {
+            0% { background-position: 0% 0%, 0% 50%; }
+            50% { background-position: 0% 0%, 100% 50%; }
+            100% { background-position: 0% 0%, 0% 50%; }
+        }
+
+        .master-back-btn {
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            border-radius: 4px !important;
+        }
+
         .classes-list { max-height: 400px; overflow-y: auto; margin: 20px 0; }
         .class-item {
             display: flex;
@@ -185,13 +211,19 @@
             position: relative;
         }
         .note-card.dragging {
-            opacity: 0.5;
-            transform: scale(0.98);
+            opacity: 0.2;
+            transform: scale(0.95);
+        }
+        .note-placeholder {
+            background: rgba(74, 158, 255, 0.05);
+            border: 2px dashed var(--accent);
+            border-radius: 8px;
+            margin-bottom: var(--note-margin);
+            pointer-events: none;
+            transition: height 0.2s;
         }
         .note-card.drag-over {
-            border: 2px dashed var(--accent);
-            margin-top: calc(var(--note-margin) + 5px);
-            margin-bottom: calc(var(--note-margin) + 5px);
+            /* Eliminamos los estilos antiguos de drag-over ya que usaremos el placeholder */
         }
         .note-card h3 {
             font-size: var(--note-title-size);
@@ -543,9 +575,14 @@
 
     <div id="view-edit" class="view">
         <nav style="margin-bottom: 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-            <button class="btn" style="color: var(--accent);" onclick="saveNote()">✔ Guardar</button>
-            <button class="btn" onclick="toggleModal('modal-summary', true)">Resumen</button>
-            <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁 Clase</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="color: var(--accent);" onclick="saveNote()">✔ Guardar</button>
+                <button class="btn" style="color: var(--danger);" onclick="cancelEdit()">✖ Cancelar</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="toggleModal('modal-summary', true)">Resumen</button>
+                <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁 Clase</button>
+            </div>
         </nav>
         <input type="text" id="edit-title" class="editor-input" placeholder="Título...">
         <textarea id="edit-content" class="editor-input" placeholder="Escribe tu historia..."></textarea>
@@ -611,7 +648,27 @@
                 <button onclick="addNewClass()">+</button>
             </div>
             <div id="classes-list" class="classes-list"></div>
+            
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+            
+            <h3>Clases Maestras</h3>
+            <div class="new-class-input">
+                <input type="text" id="new-master-name" placeholder="Nueva clase maestra...">
+                <button onclick="addNewMasterClass()">+</button>
+            </div>
+            <div id="master-classes-list" class="classes-list"></div>
+
             <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-class-manager', false)">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal para editar sub-clases de una Clase Maestra -->
+    <div id="modal-master-edit" class="modal">
+        <div class="modal-content">
+            <h3 id="edit-master-title">Editar Clase Maestra</h3>
+            <p style="color: var(--text-dim); font-size: 0.9rem;">Selecciona las clases que pertenecerán a esta carpeta:</p>
+            <div id="master-subclasses-selection" style="max-height: 300px; overflow-y: auto; margin: 15px 0;"></div>
+            <button class="btn" style="width:100%;" onclick="toggleModal('modal-master-edit', false)">Guardar y Cerrar</button>
         </div>
     </div>
 
@@ -681,6 +738,17 @@
         
         let recentColors = JSON.parse(localStorage.getItem('zen_recent_colors')) || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#3498db', '#95a5a6', '#34495e'];
         
+        let masterClasses = [];
+        try {
+            const savedMaster = localStorage.getItem('zen_master_classes');
+            masterClasses = JSON.parse(savedMaster);
+            if (!Array.isArray(masterClasses)) masterClasses = [];
+        } catch(e) {
+            masterClasses = [];
+        }
+        
+        let currentMasterClass = null;
+
         let isOnline = false;
         let currentNoteIndex = null;
         let currentColorNoteId = null;
@@ -698,11 +766,14 @@
             contentChoices: {}
         };
         
+        let lobbyScrollPos = 0;
         let autoScrollInterval = null;
         let scrollSpeed = 0;
 
         let draggedClassItem = null;
         let draggedNoteId = null;
+        let placeholder = document.createElement('div');
+        placeholder.className = 'note-placeholder';
 
         function showLoading(text = 'Procesando...') {
             const overlay = document.getElementById('loading-overlay');
@@ -932,56 +1003,95 @@
         function noteDragStart(e, noteId) {
             draggedNoteId = noteId;
             const card = e.target.closest('.note-card');
-            if (card) card.classList.add('dragging');
+            if (card) {
+                card.classList.add('dragging');
+                placeholder.style.height = card.offsetHeight + 'px';
+                setTimeout(() => { if (card) card.style.display = 'none'; }, 0);
+            }
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', noteId);
-            document.addEventListener('dragover', onDragOver);
+            
+            const container = document.getElementById('notes-list');
+            container.addEventListener('dragover', onNoteListDragOver);
+            container.addEventListener('drop', noteDrop);
             document.addEventListener('dragend', onDragEndGlobal);
         }
         
-        function onDragOver(e) { startAutoScroll(e); }
+        function onNoteListDragOver(e) {
+            e.preventDefault();
+            startAutoScroll(e);
+            
+            const container = document.getElementById('notes-list');
+            const draggingCard = container.querySelector('.dragging');
+            const siblings = [...container.querySelectorAll('.note-card:not(.dragging)')];
+            
+            // Encontrar la nota que sigue a la posición del ratón
+            const nextSibling = siblings.find(sibling => {
+                const rect = sibling.getBoundingClientRect();
+                const center = rect.top + rect.height / 2;
+                return e.clientY < center;
+            });
+            
+            if (nextSibling) {
+                container.insertBefore(placeholder, nextSibling);
+            } else {
+                container.appendChild(placeholder);
+            }
+        }
         
         function onDragEndGlobal() {
             stopAutoScroll();
-            document.removeEventListener('dragover', onDragOver);
+            const container = document.getElementById('notes-list');
+            container.removeEventListener('dragover', onNoteListDragOver);
+            container.removeEventListener('drop', noteDrop);
+            
+            if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            document.querySelectorAll('.note-card').forEach(card => {
+                card.classList.remove('dragging');
+                card.style.display = 'block';
+            });
             document.removeEventListener('dragend', onDragEndGlobal);
         }
 
-        function noteDragOver(e, noteId) {
-            e.preventDefault();
-            const targetCard = e.target.closest('.note-card');
-            if (targetCard && targetCard.getAttribute('data-note-id') !== draggedNoteId) {
-                targetCard.classList.add('drag-over');
-            }
-            startAutoScroll(e);
-        }
-
-        function noteDragLeave(e) {
-            const card = e.target.closest('.note-card');
-            if (card) card.classList.remove('drag-over');
-        }
-
-        function noteDrop(e, targetNoteId) {
+        function noteDrop(e) {
             e.preventDefault();
             stopAutoScroll();
-            if (draggedNoteId && draggedNoteId !== targetNoteId) {
+            
+            if (draggedNoteId && placeholder.parentNode) {
+                let nextNoteId = null;
+                let sibling = placeholder.nextElementSibling;
+                while (sibling) {
+                    if (sibling.classList.contains('note-card') && !sibling.classList.contains('dragging')) {
+                        nextNoteId = sibling.getAttribute('data-note-id');
+                        break;
+                    }
+                    sibling = sibling.nextElementSibling;
+                }
+                
                 const draggedIndex = notes.findIndex(n => n.id === draggedNoteId);
-                const targetIndex = notes.findIndex(n => n.id === targetNoteId);
-                if (draggedIndex !== -1 && targetIndex !== -1) {
+                if (draggedIndex !== -1) {
                     const [draggedNote] = notes.splice(draggedIndex, 1);
-                    notes.splice(targetIndex, 0, draggedNote);
+                    
+                    if (nextNoteId) {
+                        const targetIndex = notes.findIndex(n => n.id === nextNoteId);
+                        notes.splice(targetIndex, 0, draggedNote);
+                    } else {
+                        const classNotes = notes.filter(n => n.clase === currentClass);
+                        if (classNotes.length > 0) {
+                            const lastOfClass = classNotes[classNotes.length - 1];
+                            const lastIndex = notes.findIndex(n => n.id === lastOfClass.id);
+                            notes.splice(lastIndex + 1, 0, draggedNote);
+                        } else {
+                            notes.push(draggedNote);
+                        }
+                    }
                     saveToLocal();
                     renderNotes();
                     if (isOnline) uploadNotesOrderToCloud();
                 }
             }
-            document.querySelectorAll('.note-card').forEach(card => card.classList.remove('drag-over', 'dragging'));
-            draggedNoteId = null;
-        }
-
-        function noteDragEnd(e) {
-            stopAutoScroll();
-            document.querySelectorAll('.note-card').forEach(card => card.classList.remove('drag-over', 'dragging'));
+            
+            if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
             draggedNoteId = null;
         }
 
@@ -1007,15 +1117,17 @@
                     classes: classes,
                     deletedNotesLog: deletedNotesLog,
                     recentColors: recentColors,
+                    masterClasses: masterClasses,
                     timestamp: Date.now(),
-                    version: '1.0'
+                    version: '1.1'
                 };
                 
                 await db.ref('carpeta_segura/backup').set(backupData);
                 await db.ref('carpeta_segura/metadata').set({
                     lastBackup: Date.now(),
                     noteCount: notes.length,
-                    classCount: classes.length
+                    classCount: classes.length,
+                    masterCount: masterClasses.length
                 });
                 
                 alert('✅ Backup guardado exitosamente en carpeta_segura');
@@ -1054,6 +1166,7 @@
                 classes = backupData.classes || ['tareas', 'comidas', 'links'];
                 deletedNotesLog = backupData.deletedNotesLog || [];
                 recentColors = backupData.recentColors || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6'];
+                masterClasses = backupData.masterClasses || [];
                 
                 // Asegurar que currentClass exista en las nuevas clases
                 if (!classes.includes(currentClass)) {
@@ -1066,9 +1179,11 @@
                 localStorage.setItem('zen_current_class', currentClass);
                 localStorage.setItem('zen_deleted_log', JSON.stringify(deletedNotesLog));
                 localStorage.setItem('zen_recent_colors', JSON.stringify(recentColors));
+                localStorage.setItem('zen_master_classes', JSON.stringify(masterClasses));
                 
                 // Renderizar UI
                 renderClasses();
+                renderMasterClassesList();
                 renderNotes();
                 applySettings();
                 
@@ -1091,6 +1206,8 @@
             const cloudOrder = orderSnapshot.val();
             const deletedSnapshot = await db.ref('metadata/deleted_notes').once('value');
             const cloudDeleted = deletedSnapshot.val();
+            const masterSnapshot = await db.ref('metadata/master_classes').once('value');
+            const cloudMaster = masterSnapshot.val();
             
             // 1. Notas eliminadas
             const deletedNotes = [];
@@ -1154,8 +1271,35 @@
                     });
                 }
             }
+
+            // 5. Clases Maestras (Comparación inteligente)
+            let masterChanges = null;
+            if (cloudMaster && cloudMaster.list) {
+                const isSame = areMasterClassesEqual(masterClasses, cloudMaster.list);
+                if (!isSame) {
+                    const isCloudNewer = cloudMaster.timestamp > (parseInt(localStorage.getItem('zen_master_timestamp')) || 0);
+                    masterChanges = {
+                        cloud: cloudMaster.list,
+                        local: [...masterClasses],
+                        recommended: isCloudNewer ? 'cloud' : 'local'
+                    };
+                }
+            }
             
-            return { deletedNotes, classChanges, colorChanges, contentConflicts };
+            return { deletedNotes, classChanges, colorChanges, contentConflicts, masterChanges };
+        }
+
+        // Función para comparar carpetas sin importar si Firebase borró los arrays vacíos
+        function areMasterClassesEqual(list1, list2) {
+            if (list1.length !== list2.length) return false;
+            for (const m1 of list1) {
+                const m2 = list2.find(m => m.name === m1.name);
+                if (!m2) return false;
+                const subs1 = (m1.subClasses || []).sort().join(',');
+                const subs2 = (m2.subClasses || []).sort().join(',');
+                if (subs1 !== subs2) return false;
+            }
+            return true;
         }
         
         function renderUnifiedModal(data) {
@@ -1281,6 +1425,28 @@
                 });
                 container.appendChild(section);
             }
+
+            // Sección de clases maestras
+            if (data.masterChanges) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `
+                    <h4>🌈 Clases Maestras</h4>
+                    <div class="sync-item">
+                        <div><span class="badge badge-cloud">☁️ Nube</span> ${escapeHtml(data.masterChanges.cloud.map(m => m.name).join(', '))}</div>
+                        <div><span class="badge badge-local">💾 Local</span> ${escapeHtml(data.masterChanges.local.map(m => m.name).join(', '))}</div>
+                        <div class="sync-option-group" style="margin-top: 10px;">
+                            <label class="sync-option ${data.masterChanges.recommended === 'cloud' ? 'recommended' : ''}">
+                                <input type="radio" name="master_choice" value="cloud" ${data.masterChanges.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar nube
+                            </label>
+                            <label class="sync-option ${data.masterChanges.recommended === 'local' ? 'recommended' : ''}">
+                                <input type="radio" name="master_choice" value="local" ${data.masterChanges.recommended === 'local' ? 'checked' : ''}> 💾 Mantener local
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(section);
+            }
             
             // Botón marcar todo
             document.getElementById('mark-all-recommended').onclick = () => {
@@ -1316,6 +1482,15 @@
                 await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
             } else if (classChoice === 'local' && data.classChanges) {
                 await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
+            }
+
+            // Procesar clases maestras
+            const masterChoice = document.querySelector('input[name="master_choice"]:checked')?.value;
+            if (masterChoice === 'cloud' && data.masterChanges) {
+                masterClasses = [...data.masterChanges.cloud];
+                saveMasterClasses();
+            } else if (masterChoice === 'local' && data.masterChanges) {
+                saveMasterClasses();
             }
             
             // Procesar colores
@@ -1372,7 +1547,8 @@
                 if (syncDataResult.deletedNotes.length > 0 || 
                     syncDataResult.classChanges || 
                     syncDataResult.colorChanges.length > 0 || 
-                    syncDataResult.contentConflicts.length > 0) {
+                    syncDataResult.contentConflicts.length > 0 ||
+                    syncDataResult.masterChanges) {
                     
                     renderUnifiedModal(syncDataResult);
                     toggleModal('modal-unified-sync', true);
@@ -1428,6 +1604,7 @@
                 }
             }
             await uploadNotesOrderToCloud();
+            await db.ref('metadata/master_classes').set({ list: masterClasses, timestamp: Date.now() });
             saveAndRender();
         }
 
@@ -1468,8 +1645,16 @@
             const modal = document.getElementById(id);
             if (modal) modal.style.display = s ? 'block' : 'none';
         }
-        function showView(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function showLobby() { renderNotes(); showView('view-lobby'); }
+        function showView(id) { 
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            if (id !== 'view-lobby') window.scrollTo(0, 0);
+        }
+        function showLobby() { 
+            renderNotes(); 
+            showView('view-lobby'); 
+            window.scrollTo(0, lobbyScrollPos);
+        }
         
         function escapeHtml(str) {
             if (!str) return '';
@@ -1497,10 +1682,6 @@
                 div.style.backgroundColor = bgColor;
                 div.style.color = textColor;
                 div.addEventListener('dragstart', (e) => noteDragStart(e, n.id));
-                div.addEventListener('dragover', (e) => noteDragOver(e, n.id));
-                div.addEventListener('dragleave', noteDragLeave);
-                div.addEventListener('drop', (e) => noteDrop(e, n.id));
-                div.addEventListener('dragend', noteDragEnd);
                 let previewHtml = '';
                 if (showPreview && n.content) {
                     const truncatedContent = truncateText(n.content, 80);
@@ -1559,6 +1740,7 @@
         }
         
         function openNote(id) { 
+            lobbyScrollPos = window.scrollY;
             currentNoteIndex = notes.findIndex(n => n.id === id);
             const n = notes[currentNoteIndex]; 
             document.getElementById('read-title').innerText = n.title; 
@@ -1573,6 +1755,19 @@
             document.getElementById('edit-content').value = n.content; 
             document.getElementById('edit-summary').value = n.summary; 
             showView('view-edit'); 
+        }
+
+        function cancelEdit() {
+            if (currentNoteIndex === null) {
+                showLobby();
+            } else {
+                // Volver a la vista de lectura de la nota actual
+                const n = notes[currentNoteIndex];
+                document.getElementById('read-title').innerText = n.title; 
+                document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; 
+                document.getElementById('read-content').innerText = n.content; 
+                showView('view-read');
+            }
         }
 
         function saveClasses() {
@@ -1592,15 +1787,201 @@
             const bar = document.getElementById('classes-bar');
             if (!bar) return;
             let html = '';
-            classes.forEach(cls => {
-                html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls.replace(/'/g, "\\'")}')">${escapeHtml(cls)}</button>`;
-            });
+            
+            if (currentMasterClass) {
+                // Vista dentro de una Clase Maestra
+                const master = masterClasses.find(m => m.name === currentMasterClass);
+                html += `<button class="class-btn master-back-btn" onclick="toggleMasterView(null)">📂 ${escapeHtml(currentMasterClass)}</button>`;
+                if (master) {
+                    const subList = master.subClasses || [];
+                    subList.forEach(cls => {
+                        html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls.replace(/'/g, "\\'")}')">${escapeHtml(cls)}</button>`;
+                    });
+                }
+            } else {
+                // Vista General
+                // Primero las Clases Maestras
+                masterClasses.forEach(master => {
+                    html += `<button class="class-btn master" onclick="toggleMasterView('${master.name.replace(/'/g, "\\'")}')">${escapeHtml(master.name)}</button>`;
+                });
+                
+                // Luego las clases que NO están en ninguna clase maestra
+                classes.forEach(cls => {
+                    const isInsideFolder = masterClasses.some(m => m.subClasses && m.subClasses.includes(cls));
+                    if (!isInsideFolder) {
+                        html += `<button class="class-btn ${currentClass === cls ? 'active' : ''}" onclick="selectClass('${cls.replace(/'/g, "\\'")}')">${escapeHtml(cls)}</button>`;
+                    }
+                });
+            }
+            
             html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
             bar.innerHTML = html;
         }
 
+        function toggleMasterView(masterName) {
+            if (currentMasterClass === masterName) {
+                currentMasterClass = null;
+            } else {
+                currentMasterClass = masterName;
+                // Al entrar en una carpeta, seleccionamos la primera sub-clase si existe
+                if (masterName) {
+                    const master = masterClasses.find(m => m.name === masterName);
+                    if (master && master.subClasses && master.subClasses.length > 0) {
+                        currentClass = master.subClasses[0];
+                    }
+                }
+            }
+            renderClasses();
+            renderNotes();
+        }
+
+        function saveMasterClasses() {
+            // Normalizar: asegurar que todas las carpetas tengan el array subClasses
+            masterClasses.forEach(m => {
+                if (!m.subClasses) m.subClasses = [];
+            });
+            localStorage.setItem('zen_master_classes', JSON.stringify(masterClasses));
+            localStorage.setItem('zen_master_timestamp', Date.now());
+            renderClasses();
+            renderMasterClassesList();
+            if (isOnline) {
+                db.ref('metadata/master_classes').set({ list: masterClasses, timestamp: Date.now() });
+            }
+        }
+
+        function addNewMasterClass() {
+            const input = document.getElementById('new-master-name');
+            const name = input.value.trim();
+            if (name && !masterClasses.find(m => m.name === name)) {
+                masterClasses.push({ name: name, subClasses: [] });
+                saveMasterClasses();
+                input.value = '';
+            }
+        }
+
+        async function deleteMasterClass(name) {
+            const master = masterClasses.find(m => m.name === name);
+            if (!master) return;
+            
+            const subs = master.subClasses || [];
+            const notesToDelete = notes.filter(n => subs.includes(n.clase));
+            
+            const msg = `🚨 PELIGRO: Estás a punto de eliminar la Clase Maestra "${name}".\n\n` +
+                        `Esta acción ELIMINARÁ permanentemente:\n` +
+                        `- La carpeta "${name}"\n` +
+                        `- Las clases: ${subs.join(', ') || 'ninguna'}\n` +
+                        `- ${notesToDelete.length} notas que están dentro de esas clases.\n\n` +
+                        `¿Estás SEGURO de querer continuar?`;
+
+            if (confirm(msg)) {
+                // 1. Registrar las notas borradas para sincronización
+                notesToDelete.forEach(n => {
+                    deletedNotesLog.push({ id: n.id, timestamp: Date.now() });
+                });
+                
+                // 2. Filtrar notas y clases
+                notes = notes.filter(n => !subs.includes(n.clase));
+                classes = classes.filter(c => !subs.includes(c));
+                
+                // 3. Eliminar la Clase Maestra
+                masterClasses = masterClasses.filter(m => m.name !== name);
+                
+                if (currentMasterClass === name) currentMasterClass = null;
+                
+                // 4. Guardar y actualizar todo
+                saveMasterClasses(); // Actualiza carpetas
+                saveClasses();       // Actualiza clases
+                saveToLocal();       // Actualiza notas
+                
+                renderClasses();
+                renderClassesList();
+                renderNotes();
+                
+                if (isOnline) {
+                    await uploadClassesToCloud();
+                    await uploadNotesOrderToCloud();
+                    // Sincronizar log de eliminaciones
+                    db.ref('metadata/deleted_notes').set({ list: deletedNotesLog, timestamp: Date.now() });
+                }
+                
+                alert(`✅ Se ha eliminado la carpeta "${name}" y todo su contenido.`);
+            }
+        }
+
+        function toggleSubclassInMaster(masterName, subClassName) {
+            const master = masterClasses.find(m => m.name === masterName);
+            if (master) {
+                if (!master.subClasses) master.subClasses = [];
+                const index = master.subClasses.indexOf(subClassName);
+                if (index === -1) {
+                    master.subClasses.push(subClassName);
+                } else {
+                    master.subClasses.splice(index, 1);
+                }
+                saveMasterClasses();
+                renderMasterSubclassSelection(masterName);
+            }
+        }
+
+        function renderMasterSubclassSelection(masterName) {
+            const container = document.getElementById('master-subclasses-selection');
+            const master = masterClasses.find(m => m.name === masterName);
+            document.getElementById('edit-master-title').innerText = `Carpeta: ${masterName}`;
+            
+            let html = '';
+            classes.forEach(cls => {
+                const isSelected = master.subClasses && master.subClasses.includes(cls);
+                // Buscar si la clase ya pertenece a OTRA carpeta
+                const otherMaster = masterClasses.find(m => m.name !== masterName && m.subClasses && m.subClasses.includes(cls));
+                
+                let statusText = '○ Excluida';
+                let statusColor = 'var(--text-dim)';
+                let action = `onclick="toggleSubclassInMaster('${masterName.replace(/'/g, "\\'")}', '${cls.replace(/'/g, "\\'")}')"`;
+                let cursor = 'pointer';
+
+                if (isSelected) {
+                    statusText = '● Incluida';
+                    statusColor = 'var(--success)';
+                } else if (otherMaster) {
+                    statusText = `✖ Ocupada (${otherMaster.name})`;
+                    statusColor = 'var(--danger)';
+                    action = ''; // Bloqueamos la acción
+                    cursor = 'not-allowed';
+                }
+
+                html += `
+                    <div class="class-item" style="cursor: ${cursor};" ${action}>
+                        <span>${escapeHtml(cls)}</span>
+                        <span style="color: ${statusColor}">${statusText}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            toggleModal('modal-master-edit', true);
+        }
+
+        function renderMasterClassesList() {
+            const list = document.getElementById('master-classes-list');
+            if (!list) return;
+            list.innerHTML = '';
+            masterClasses.forEach(master => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                const subCount = master.subClasses ? master.subClasses.length : 0;
+                div.innerHTML = `
+                    <span class="class-name">📂 ${escapeHtml(master.name)} (${subCount})</span>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-sm" style="border-color: var(--accent); color: var(--accent);" onclick="renderMasterSubclassSelection('${master.name.replace(/'/g, "\\'")}')">Editar</button>
+                        <button class="delete-class" onclick="deleteMasterClass('${master.name.replace(/'/g, "\\'")}')">Eliminar</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
         function selectClass(cls) {
             currentClass = cls;
+            lobbyScrollPos = 0;
             saveClasses();
             renderNotes();
         }
@@ -1631,6 +2012,13 @@
             if (confirm(`⚠️ ¿Eliminar la clase "${cls}"?\nSe perderán ${notesCount} notas de esta clase.`)) {
                 notes = notes.filter(n => n.clase !== cls);
                 classes = classes.filter(c => c !== cls);
+                
+                // Limpiar la clase de cualquier Clase Maestra que la contenga
+                masterClasses.forEach(m => {
+                    m.subClasses = m.subClasses.filter(sc => sc !== cls);
+                });
+                saveMasterClasses(); // Guarda y actualiza UI de carpetas
+
                 if (currentClass === cls) currentClass = classes[0];
                 saveClasses();
                 saveToLocal();
@@ -1767,6 +2155,7 @@
         applySettings();
         renderClasses();
         renderClassesList();
+        renderMasterClassesList();
         renderClassSelector();
         renderNotes();
     </script>
