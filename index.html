@@ -10,6 +10,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/monolith.min.css"/>
+    <!-- Dexie.js para almacenamiento masivo en IndexedDB -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root {
             --bg: #1a1a1a; --surface: #242424; --text-main: #d1d1d1;
@@ -725,27 +727,24 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
-        let notes = JSON.parse(localStorage.getItem('zen_v3')) || [];
-        let deletedNotesLog = JSON.parse(localStorage.getItem('zen_deleted_log')) || [];
-        
-        let classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
+        // --- Configuración de Base de Datos Local (IndexedDB) ---
+        const localDB = new Dexie("ZenWriterDB");
+        localDB.version(1).stores({
+            notes: 'id, title, content, date, clase, timestamp',
+            appState: 'id, data'
+        });
+
+        let notes = [];
+        let deletedNotesLog = [];
+        let classes = ['tareas', 'comidas', 'links'];
+        let recentColors = ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#3498db', '#95a5a6', '#34495e'];
+        let masterClasses = [];
+
         let currentClass = localStorage.getItem('zen_current_class') || 'tareas';
-        
         let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false';
         let showPreview = localStorage.getItem('zen_show_preview') !== 'false';
         let showDate = localStorage.getItem('zen_show_date') !== 'false';
         let noteSize = localStorage.getItem('zen_note_size') || 'medium';
-        
-        let recentColors = JSON.parse(localStorage.getItem('zen_recent_colors')) || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#3498db', '#95a5a6', '#34495e'];
-        
-        let masterClasses = [];
-        try {
-            const savedMaster = localStorage.getItem('zen_master_classes');
-            masterClasses = JSON.parse(savedMaster);
-            if (!Array.isArray(masterClasses)) masterClasses = [];
-        } catch(e) {
-            masterClasses = [];
-        }
         
         let currentMasterClass = null;
 
@@ -1173,13 +1172,8 @@
                     currentClass = classes[0];
                 }
                 
-                // Guardar en localStorage
-                saveToLocal();
-                localStorage.setItem('zen_classes', JSON.stringify(classes));
-                localStorage.setItem('zen_current_class', currentClass);
-                localStorage.setItem('zen_deleted_log', JSON.stringify(deletedNotesLog));
-                localStorage.setItem('zen_recent_colors', JSON.stringify(recentColors));
-                localStorage.setItem('zen_master_classes', JSON.stringify(masterClasses));
+                // Guardar en IndexedDB
+                await saveToLocal();
                 
                 // Renderizar UI
                 renderClasses();
@@ -1639,8 +1633,28 @@
             }
         }
 
-        function saveToLocal() { localStorage.setItem('zen_v3', JSON.stringify(notes)); }
-        function saveAndRender() { saveToLocal(); renderNotes(); }
+        async function saveToLocal() {
+            try {
+                if (typeof localDB === 'undefined') return;
+                await localDB.notes.clear();
+                await localDB.notes.bulkAdd(notes);
+                
+                await localDB.appState.put({id: 'deleted_log', data: deletedNotesLog});
+                await localDB.appState.put({id: 'classes', data: classes});
+                await localDB.appState.put({id: 'master_classes', data: masterClasses});
+                await localDB.appState.put({id: 'recent_colors', data: recentColors});
+                
+                localStorage.setItem('zen_current_class', currentClass);
+                localStorage.setItem('zen_copy_mode', copyWithTitle);
+                localStorage.setItem('zen_show_preview', showPreview);
+                localStorage.setItem('zen_show_date', showDate);
+                localStorage.setItem('zen_note_size', noteSize);
+            } catch (e) {
+                console.error("Error guardando en IndexedDB:", e);
+            }
+        }
+        
+        async function saveAndRender() { await saveToLocal(); renderNotes(); }
         function toggleModal(id, s) { 
             const modal = document.getElementById(id);
             if (modal) modal.style.display = s ? 'block' : 'none';
@@ -1770,12 +1784,11 @@
             }
         }
 
-        function saveClasses() {
-            localStorage.setItem('zen_classes', JSON.stringify(classes));
-            localStorage.setItem('zen_current_class', currentClass);
+        async function saveClasses() {
+            await saveToLocal();
             renderClasses();
-            renderClassesList(); // Actualizar la lista de gestión
-            renderClassSelector(); // Actualizar el selector
+            renderClassesList();
+            renderClassSelector();
         }
 
         async function uploadClassesToCloud() {
@@ -1835,13 +1848,12 @@
             renderNotes();
         }
 
-        function saveMasterClasses() {
+        async function saveMasterClasses() {
             // Normalizar: asegurar que todas las carpetas tengan el array subClasses
             masterClasses.forEach(m => {
                 if (!m.subClasses) m.subClasses = [];
             });
-            localStorage.setItem('zen_master_classes', JSON.stringify(masterClasses));
-            localStorage.setItem('zen_master_timestamp', Date.now());
+            await saveToLocal();
             renderClasses();
             renderMasterClassesList();
             if (isOnline) {
@@ -2152,12 +2164,58 @@
         }
 
         // Inicialización
-        applySettings();
-        renderClasses();
-        renderClassesList();
-        renderMasterClassesList();
-        renderClassSelector();
-        renderNotes();
+        async function initApp() {
+            showLoading('Cargando datos...');
+            try {
+                // 1. Intentar cargar desde IndexedDB
+                const savedNotes = await localDB.notes.toArray();
+                const savedLog = await localDB.appState.get('deleted_log');
+                const savedClasses = await localDB.appState.get('classes');
+                const savedMaster = await localDB.appState.get('master_classes');
+                const savedColors = await localDB.appState.get('recent_colors');
+
+                if (savedNotes.length > 0) {
+                    notes = savedNotes;
+                    deletedNotesLog = savedLog ? savedLog.data : [];
+                    classes = savedClasses ? savedClasses.data : ['tareas', 'comidas', 'links'];
+                    masterClasses = savedMaster ? savedMaster.data : [];
+                    recentColors = savedColors ? savedColors.data : recentColors;
+                } else {
+                    // 2. MIGRACIÓN: Si IndexedDB está vacío, buscar en localStorage
+                    console.log("Migrando datos de localStorage a IndexedDB...");
+                    const oldNotes = JSON.parse(localStorage.getItem('zen_v3')) || [];
+                    if (oldNotes.length > 0) {
+                        notes = oldNotes;
+                        deletedNotesLog = JSON.parse(localStorage.getItem('zen_deleted_log')) || [];
+                        classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
+                        
+                        try {
+                            const savedMasterLS = localStorage.getItem('zen_master_classes');
+                            masterClasses = JSON.parse(savedMasterLS);
+                            if (!Array.isArray(masterClasses)) masterClasses = [];
+                        } catch(e) { masterClasses = []; }
+
+                        recentColors = JSON.parse(localStorage.getItem('zen_recent_colors')) || recentColors;
+                        
+                        // Guardar en el nuevo sistema
+                        await saveToLocal();
+                        console.log("Migración completada.");
+                    }
+                }
+            } catch (e) {
+                console.error("Error al inicializar base de datos:", e);
+            }
+
+            hideLoading();
+            applySettings();
+            renderClasses();
+            renderClassesList();
+            renderMasterClassesList();
+            renderClassSelector();
+            renderNotes();
+        }
+
+        initApp();
     </script>
 </body>
 </html>
