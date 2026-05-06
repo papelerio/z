@@ -1,23 +1,30 @@
-
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ZenWriter Cloud - Fast Sync</title>
-    <link rel="icon" href="data:image/webp;base64,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">
+    <link rel="icon"
+        href="data:image/webp;base64,UklGRgAJAABXRUJQVlA4WAoAAAAgAAAAWQAAWQAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggEgcAAPAgAJ0BKloAWgA+BAFAAAAIlnalpZ+hO8ZvxV4fKI2ik/KewDlM9wB+wH6V+870gH6idbp6AH6x+lN+zPwY/sT+znwAfqTcs/xA6qDt56pfuX/eOfYwv+hfjT+4X+o9iXfD/45/Svxo/K7OAvjX9U/Kz++ftJsh/4X/NfyT4gD3AP4J/Gf6b/Wv2j/xH//+SX9S/KL/K+1P8h/n39i/H39//wA/h38d/rX9p/aH+7//v/eeLf9RvYY/T4VKVxl+KtUAzgeWo30KC5geF4wb2RJ/BOPqnTtbEJV7pDeQuZxo9qVdAZWvgUP0QcgufMGpV3IEWeG0U3YeFoax0+sAECiGkibfIqoH2WvqceelAH2AAP7+WPdphDpf/5sDu4uK+6A//7Wh+rQ/VofBiiD90L2F/JnA6qPDOED7Q7VeQ8d5TjTGiBiGrAtgz+kckqs2cKXcpPXONF0g7PyvAur9JogJxeToEegAHghC3aLjxk/2ad8W1x+F6tZuyl1G2p5yVCZe3Za5npAbhiIlSfUAq+UYAuR5h9OLxwLwpIi4LITJku1hiKy00jqk7s5xxoij/5ox/TUY3xfglzIh6u6Li5IPJQoniiINWOj59teb5n0MrWG0+5//vQpBW///If87BUH9p91/xMfxKh/xpsw5vOcRbh6sX+e/7qc3Hbf1j5fcl5OzC54v00QELDhiQ6wcrnMnVNkxN6zFkpHR7BcTUiDlmk/KE4lgVYWpIfql9+YaX9FacXaiiQ7vsnYBUWpdlkpzeECX3StKCStNQz1wvHEVQUda/vDzreWdOXsbA//8muHyc3u57o93LwfHAxNokhDzB3qgW/w5/+qsftacK89zo+i8TQy9J+cCzkm5eV+iW/6cLatxrI1rPpyHAo7ymmj0GNgFZuvOGcvDPt4U/qpDqnNmkFOUshQ/6Dq1//+UN//xWxNVZQ7Lg24m6qvKv1lHLV2cEiSWY2GUuUb3D104ZOOS+/Ik5/xHmCXF2oSA/7CtftPZyV11OI98hD5k1RUqhvfir8l4ImFmISbyhHyt/VmEskz0ZG8N+cW7DNjb0iUvrwUeQnG2aCjSdGmPQ7LfPOCXLRPxlv/XCY+LXb+4p4bRMOztlKgwP08fEzC8Qu1s9e43yRGngU4MwNh66xPnzKSt/DMfSjtz5ojeKMVAKYP//SsP5c3bPeX7J4XAoEgq/Bd31/e4a5D/ipkiQS7gVZZCfupi4BPmbtv6988+pyNcxIDNbSY0Td3TdBG/8pq4tEJPWqE9YjJPp9pIR7/Ctkqs7fgvuFem1t30SV+njPQSrK6y/dY+Kp+0a7rCTW/cts1Rhc2/M6//eA30yxZPAcpn2uR4XqzGJedHIOOnTC7uoJbqyFs31lM6vjO6NE7djks+JrDIN6US5AtYi+Rsxfu22cynGh42xH4ce+XdWM0hZC8iaAw8vKieWrbl0jzBfTod6ls8QDp36oa6eB/HZMiw/0mKk8+lNaqh0TFlFuXxpYcPQE2sc3fjPhWbxkM/q8HA5fXOrYI0+OGqZUgJm3VSZpi0OgJANWCiNdKhRfL/K/lHv+7Qz9baZngn9JbLhTQWoXIg+eF9P0X9Z/QlxnxyojhhjoTDrA26yhxnHYCWbemGnXlE5d/VXsz1CVoL3ZaqFuY8gnqvuy2eA9GhNRnIYOIPkAYOcl2CkZFIKp5ppb/J9rxPPsH77SwBfCmfSB5ycf1HMc1wyR2ol0u6e6MrAtW9Jv0Om6d1kmzB6qFf91MxVRaE5kDugRKLnnFaUhtD+Vg/WOktCv8bTVUViuvXSMOAV0rj49aa3OciH6q4fdHR2o1dltD9pzbcvvnTGWZ7E0cEn/IKYvDn/x9xIYMCI0mD6Y3vBQmbXf9EP55o94xp85lMMsqVRAw6asBICfAXW1G/5zrtvephlhRHsW5WVrL3WxxvIVKD/1Ikt9oHqI947CCu2LvaK3Iqh+Z/adDtcv8ShUfwfmV81ND95XoO+ShHxmqKIVFISnEBsVM7v98OV3TKk4YKH2ah94kx+7FVh1eizydTZ5UMptrYmOOsG1na9AhAe01TxQHmPjQcRsGNXcVLG8PsA3mZY6VeQN/f+zisD/hI+MbYZwaR9Yyg/fSnrpheUZmrJ5fifd9/SLGYiAdwmUCu9kcxIrCoSB9yY4laHjqHr2O69pp3d0//8YpKPiM25kCzDQzVq2t964TtRWFjZmEC+doXgCPQP1gDYMWAQdYrzjGddAR7yueQhL0di4Om0D8puAlhDxcPzxUQP2LL2D1JXGBapZ/Cdl0OoacOM0yg819QJOXRAkmtE10hob9N05kqUxziA4HYLLwBQpVOE2AEavk609pA+4+0rZBMGgyZEOFjRhT5UhHgsiiV+Rp31pFCBQvm65q23cn3AURka758iZkAAAA=">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/monolith.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/monolith.min.css" />
     <!-- Dexie.js para almacenamiento masivo en IndexedDB -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root {
-            --bg: #1a1a1a; --surface: #242424; --text-main: #d1d1d1;
-            --text-dim: #888; --accent: #4a9eff; --danger: #ff5555;
-            --success: #2ecc71; --border: #333; --warning: #f1c40f;
-            
+            --bg: #1a1a1a;
+            --surface: #242424;
+            --text-main: #d1d1d1;
+            --text-dim: #888;
+            --accent: #4a9eff;
+            --danger: #ff5555;
+            --success: #2ecc71;
+            --border: #333;
+            --warning: #f1c40f;
+
             --note-padding: 20px;
             --note-title-size: 1.5rem;
             --note-font-size: 1rem;
@@ -53,37 +60,112 @@
             --note-preview-lines: 1;
         }
 
-        body { font-family: serif; margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
-        .view { display: none; padding: 20px; max-width: 850px; margin: auto; box-sizing: border-box; }
-        .active { display: block; }
+        body.size-ultra-compact {
+            --note-padding: 4px 8px;
+            --note-title-size: 0.85rem;
+            --note-font-size: 0.7rem;
+            --note-margin: 4px;
+            --note-small-size: 0.6rem;
+            --note-preview-lines: 1;
+        }
 
-        .status-bar { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            border-bottom: 1px solid var(--border); 
+        body.size-ultra-compact .note-card .card-actions {
+            margin-top: 2px;
+        }
+
+        body.size-ultra-compact .note-card .note-class-tag {
+            font-size: 0.55rem;
+            padding: 1px 4px;
+        }
+
+        body.size-ultra-compact .note-card .drag-note-handle,
+        body.size-ultra-compact .note-card .color-btn {
+            min-width: 24px;
+            min-height: 24px;
+            padding: 2px;
+            font-size: 0.8rem;
+        }
+
+        body {
+            font-family: serif;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .view {
+            display: none;
+            padding: 20px;
+            max-width: 850px;
+            margin: auto;
+            box-sizing: border-box;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 10px;
             flex-wrap: wrap;
             gap: 8px;
         }
+
         .status-left {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
+
         .status-right {
             display: flex;
             gap: 8px;
         }
-        #btn-connect, #btn-upload, #btn-load { padding: 6px 14px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
-        #btn-connect.offline { background: var(--danger); color: white; }
-        #btn-connect.online { background: var(--success); color: white; }
-        #btn-connect.syncing { background: var(--warning); color: black; }
-        #btn-upload { background: var(--accent); color: white; }
-        #btn-load { background: var(--warning); color: black; }
-        
+
+        #btn-connect,
+        #btn-upload,
+        #btn-load {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        #btn-connect.offline {
+            background: var(--danger);
+            color: white;
+        }
+
+        #btn-connect.online {
+            background: var(--success);
+            color: white;
+        }
+
+        #btn-connect.syncing {
+            background: var(--warning);
+            color: black;
+        }
+
+        #btn-upload {
+            background: var(--accent);
+            color: white;
+        }
+
+        #btn-load {
+            background: var(--warning);
+            color: black;
+        }
+
         .btn-icon {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -95,6 +177,7 @@
             white-space: nowrap;
             transition: all 0.2s;
         }
+
         .btn-icon:hover {
             border-color: var(--accent);
             color: var(--accent);
@@ -107,10 +190,19 @@
             padding: 8px 0;
             margin-bottom: 15px;
             scrollbar-width: thin;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
-        .classes-bar::-webkit-scrollbar { height: 4px; }
-        .classes-bar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-        
+
+        .classes-bar::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .classes-bar::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
         .class-btn {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -120,16 +212,31 @@
             cursor: pointer;
             white-space: nowrap;
             font-size: 0.8rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .class-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .class-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-        .class-btn.add { background: transparent; border: 1px dashed var(--border); color: var(--success); }
+
+        .class-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .class-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .class-btn.add {
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--success);
+        }
 
         /* Estilo Contorno Arcoíris para Clases Maestras */
         .class-btn.master {
             border: 2px solid transparent;
-            background-image: linear-gradient(var(--surface), var(--surface)), 
-                              linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-image: linear-gradient(var(--surface), var(--surface)),
+                linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
             background-origin: border-box;
             background-clip: padding-box, border-box;
             background-size: 100% 100%, 400% 100%;
@@ -138,9 +245,17 @@
         }
 
         @keyframes rainbow-border {
-            0% { background-position: 0% 0%, 0% 50%; }
-            50% { background-position: 0% 0%, 100% 50%; }
-            100% { background-position: 0% 0%, 0% 50%; }
+            0% {
+                background-position: 0% 0%, 0% 50%;
+            }
+
+            50% {
+                background-position: 0% 0%, 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 0%, 0% 50%;
+            }
         }
 
         .master-back-btn {
@@ -150,7 +265,12 @@
             border-radius: 4px !important;
         }
 
-        .classes-list { max-height: 400px; overflow-y: auto; margin: 20px 0; }
+        .classes-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
         .class-item {
             display: flex;
             justify-content: space-between;
@@ -162,12 +282,39 @@
             border: 1px solid var(--border);
             cursor: move;
         }
-        .class-item.dragging { opacity: 0.5; transform: scale(0.98); }
-        .class-item.drag-over { border: 2px dashed var(--accent); transform: translateY(2px); }
-        .class-item-left { display: flex; align-items: center; gap: 10px; }
-        .drag-handle { color: var(--text-dim); font-size: 1.2rem; cursor: grab; padding: 0 5px; }
-        .drag-handle:active { cursor: grabbing; }
-        .class-name { color: var(--text-main); font-weight: bold; }
+
+        .class-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .class-item.drag-over {
+            border: 2px dashed var(--accent);
+            transform: translateY(2px);
+        }
+
+        .class-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .drag-handle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            cursor: grab;
+            padding: 0 5px;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .class-name {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
         .delete-class {
             background: transparent;
             border: 1px solid var(--danger);
@@ -176,12 +323,18 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        .delete-class:hover { background: var(--danger); color: white; }
+
+        .delete-class:hover {
+            background: var(--danger);
+            color: white;
+        }
+
         .new-class-input {
             display: flex;
             gap: 10px;
             margin: 20px 0;
         }
+
         .new-class-input input {
             flex: 1;
             background: var(--bg);
@@ -190,6 +343,7 @@
             padding: 10px;
             border-radius: 5px;
         }
+
         .new-class-input button {
             background: var(--success);
             color: white;
@@ -202,20 +356,23 @@
         .notes-container {
             min-height: 200px;
         }
-        .note-card { 
-            padding: var(--note-padding); 
-            background: var(--surface); 
-            border-radius: 8px; 
-            margin-bottom: var(--note-margin); 
-            border: 1px solid var(--border); 
+
+        .note-card {
+            padding: var(--note-padding);
+            background: var(--surface);
+            border-radius: 8px;
+            margin-bottom: var(--note-margin);
+            border: 1px solid var(--border);
             transition: all 0.2s ease;
             cursor: default;
             position: relative;
         }
+
         .note-card.dragging {
             opacity: 0.2;
             transform: scale(0.95);
         }
+
         .note-placeholder {
             background: rgba(74, 158, 255, 0.05);
             border: 2px dashed var(--accent);
@@ -224,19 +381,25 @@
             pointer-events: none;
             transition: height 0.2s;
         }
+
         .note-card.drag-over {
             /* Eliminamos los estilos antiguos de drag-over ya que usaremos el placeholder */
         }
+
         .note-card h3 {
             font-size: var(--note-title-size);
             margin: 0 0 4px 0;
             font-weight: bold;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
-        .note-card .note-date { 
-            font-size: var(--note-small-size); 
+
+        .note-card .note-date {
+            font-size: var(--note-small-size);
             opacity: 0.8;
             margin-bottom: 4px;
         }
+
         .note-card .note-preview {
             font-size: var(--note-font-size);
             margin-top: 6px;
@@ -247,14 +410,22 @@
             overflow: hidden;
             text-overflow: ellipsis;
             line-height: 1.4;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
+
         .note-card .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             gap: 10px;
         }
-        .note-card .card-content { flex: 1; cursor: pointer; }
+
+        .note-card .card-content {
+            flex: 1;
+            cursor: pointer;
+        }
+
         .note-card .card-actions {
             margin-top: 8px;
             display: flex;
@@ -262,12 +433,17 @@
             justify-content: space-between;
             align-items: center;
         }
-        .note-card .action-buttons { display: flex; gap: 8px; }
+
+        .note-card .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
         .drag-note-handle {
             cursor: grab;
             padding: 6px 8px;
             border-radius: 6px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             font-size: 1rem;
             transition: all 0.2s;
             display: inline-flex;
@@ -276,12 +452,18 @@
             min-width: 28px;
             min-height: 28px;
         }
-        .drag-note-handle:active { cursor: grabbing; }
-        .drag-note-handle:hover { background: rgba(0,0,0,0.4); }
-        
+
+        .drag-note-handle:active {
+            cursor: grabbing;
+        }
+
+        .drag-note-handle:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
         .note-class-tag {
             display: inline-block;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             color: inherit;
             padding: 2px 6px;
             border-radius: 10px;
@@ -289,22 +471,35 @@
             text-transform: uppercase;
             margin-top: 4px;
         }
-        .sync-warn { color: var(--warning); font-size: 0.7rem; margin-left: 6px; }
-        .btn-sm { 
-            font-size: var(--note-small-size); 
-            padding: 4px 8px; 
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
+
+        .sync-warn {
+            color: var(--warning);
+            font-size: 0.7rem;
+            margin-left: 6px;
+        }
+
+        .btn-sm {
+            font-size: var(--note-small-size);
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: inherit;
-            cursor: pointer; 
+            cursor: pointer;
             border-radius: 4px;
         }
-        .btn-sm:hover { background: rgba(0,0,0,0.5); }
-        .btn-sm:disabled { opacity: 0.2; cursor: not-allowed; }
-        
+
+        .btn-sm:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-sm:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
         .color-btn {
-            background: rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
@@ -315,57 +510,146 @@
             min-width: 36px;
             min-height: 36px;
         }
-        .color-btn:active { transform: scale(0.95); }
 
-        .color-preview { width: 50px; height: 50px; border-radius: 8px; margin-bottom: 15px; border: 2px solid var(--border); }
-        .recent-colors { 
-            display: flex; 
-            gap: 12px; 
-            flex-wrap: wrap; 
-            margin: 20px 0; 
-            padding: 15px; 
-            background: var(--bg); 
+        .color-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Rediseño Modal Color */
+        .color-preview {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .recent-colors {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .recent-color {
+            aspect-ratio: 1;
+            width: 100%;
             border-radius: 8px;
-            max-height: 180px;
-            overflow-y: auto;
-        }
-        .recent-color { 
-            width: 45px; 
-            height: 45px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            transition: all 0.2s; 
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 2px solid transparent;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .recent-color:hover { 
-            transform: scale(1.1); 
-            border-color: var(--accent);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+
+        .recent-color:hover {
+            transform: scale(1.15);
+            border-color: white;
+            z-index: 10;
         }
-        .pickr-container { 
-            margin: 20px 0; 
-            min-height: 220px;
+
+        .pickr-container {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
-        @media (max-width: 768px) {
-            .view { padding: 12px; }
-            .drag-note-handle { padding: 8px 10px; min-width: 32px; min-height: 32px; }
-            .color-btn { padding: 8px 12px; min-width: 42px; min-height: 42px; }
-            .btn-sm { padding: 6px 10px; }
-            .class-btn { padding: 6px 12px; }
-            .btn-icon { padding: 6px 10px; font-size: 0.7rem; }
-            .status-left h2 { font-size: 1.2rem; }
-            .fab { width: 48px; height: 48px; font-size: 24px; bottom: 20px; right: 20px; }
-            .recent-color { width: 40px; height: 40px; }
+
+        .color-modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 25px;
+            margin-top: 20px;
         }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; }
-        .modal-content { background: var(--surface); margin: 5% auto; padding: 25px; width: 90%; max-width: 700px; border-radius: 12px; border: 1px solid var(--border); }
-        
+        @media (max-width: 600px) {
+            .color-modal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .view {
+                padding: 12px;
+            }
+
+            .drag-note-handle {
+                padding: 8px 10px;
+                min-width: 32px;
+                min-height: 32px;
+            }
+
+            .color-btn {
+                padding: 8px 12px;
+                min-width: 42px;
+                min-height: 42px;
+            }
+
+            .btn-sm {
+                padding: 6px 10px;
+            }
+
+            .class-btn {
+                padding: 6px 12px;
+            }
+
+            .btn-icon {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+            }
+
+            .status-left h2 {
+                font-size: 1.2rem;
+            }
+
+            .fab {
+                width: 48px;
+                height: 48px;
+                font-size: 24px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .recent-color {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            margin: 5% auto;
+            padding: 25px;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
         /* Estilos para el modal unificado */
         .sync-section {
             background: var(--bg);
@@ -374,6 +658,7 @@
             padding: 15px;
             border: 1px solid var(--border);
         }
+
         .sync-section h4 {
             margin: 0 0 10px 0;
             color: var(--warning);
@@ -381,21 +666,90 @@
             align-items: center;
             gap: 8px;
         }
+
         .sync-item {
             padding: 10px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 8px;
         }
+
         .sync-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
+
+        /* Animaciones de Swipe */
+        @keyframes slideOutLeft {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(-30px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(30px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .swipe-exit-left {
+            animation: slideOutLeft 0.2s ease forwards;
+        }
+
+        .swipe-enter-right {
+            animation: slideInRight 0.2s ease forwards;
+        }
+
+        .swipe-exit-right {
+            animation: slideOutRight 0.2s ease forwards;
+        }
+
+        .swipe-enter-left {
+            animation: slideInLeft 0.2s ease forwards;
+        }
+
         .sync-option-group {
             display: flex;
             gap: 15px;
             margin-top: 8px;
             flex-wrap: wrap;
         }
+
         .sync-option {
             display: flex;
             align-items: center;
@@ -405,15 +759,18 @@
             border-radius: 4px;
             background: var(--surface);
         }
+
         .sync-option input {
             cursor: pointer;
             width: 16px;
             height: 16px;
         }
+
         .sync-option.recommended {
             background: rgba(241, 196, 15, 0.2);
             border: 1px solid var(--warning);
         }
+
         .badge {
             display: inline-block;
             padding: 2px 6px;
@@ -421,15 +778,29 @@
             font-size: 0.7rem;
             margin-left: 8px;
         }
-        .badge-cloud { background: var(--accent); color: white; }
-        .badge-local { background: var(--text-dim); color: white; }
-        .badge-recommended { background: var(--warning); color: black; }
+
+        .badge-cloud {
+            background: var(--accent);
+            color: white;
+        }
+
+        .badge-local {
+            background: var(--text-dim);
+            color: white;
+        }
+
+        .badge-recommended {
+            background: var(--warning);
+            color: black;
+        }
+
         .preview-text {
             font-size: 0.8rem;
             color: var(--text-dim);
             margin-top: 4px;
             font-family: monospace;
         }
+
         .color-preview-small {
             display: inline-block;
             width: 20px;
@@ -439,6 +810,7 @@
             margin: 0 5px;
             border: 1px solid var(--border);
         }
+
         .mark-all-btn {
             background: transparent;
             border: 1px solid var(--accent);
@@ -449,16 +821,19 @@
             font-size: 0.8rem;
             margin-bottom: 15px;
         }
+
         .mark-all-btn:hover {
             background: var(--accent);
             color: white;
         }
+
         .action-buttons-sync {
             display: flex;
             gap: 15px;
             margin-top: 20px;
             flex-wrap: wrap;
         }
+
         .btn-primary {
             background: var(--success);
             color: white;
@@ -469,6 +844,7 @@
             font-weight: bold;
             flex: 1;
         }
+
         .btn-secondary {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -478,7 +854,7 @@
             cursor: pointer;
             flex: 1;
         }
-        
+
         .size-option {
             display: flex;
             justify-content: space-between;
@@ -490,21 +866,101 @@
             border: 1px solid var(--border);
             cursor: pointer;
         }
-        .size-option.active { border-color: var(--success); background: rgba(46, 204, 113, 0.1); }
-        .size-preview { display: flex; gap: 10px; align-items: center; }
-        .preview-bar { width: 30px; background: var(--accent); border-radius: 4px; opacity: 0.5; }
-        .preview-bar.large { height: 40px; }
-        .preview-bar.medium { height: 25px; }
-        .preview-bar.compact { height: 12px; }
-        
-        .btn-fast { background: var(--warning); color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
-        .fab { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-        .btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 10px 20px; cursor: pointer; border-radius: 5px; }
 
-        .editor-input { width: 100%; border: none; outline: none; background: transparent; color: var(--text-main); font-family: inherit; }
-        #edit-title { font-size: 2rem; color: #fff; margin-bottom: 20px; }
-        #edit-content { font-size: 1.2rem; min-height: 65vh; resize: none; }
-        
+        .size-option.active {
+            border-color: var(--success);
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .size-preview {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .preview-bar {
+            width: 30px;
+            background: var(--accent);
+            border-radius: 4px;
+            opacity: 0.5;
+        }
+
+        .preview-bar.large {
+            height: 40px;
+        }
+
+        .preview-bar.medium {
+            height: 25px;
+        }
+
+        .preview-bar.compact {
+            height: 12px;
+        }
+
+        .preview-bar.ultra-compact {
+            height: 6px;
+        }
+
+        .btn-fast {
+            background: var(--warning);
+            color: #000;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--accent);
+            color: white;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .editor-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+
+        #edit-title {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        #edit-content {
+            font-size: 1.2rem;
+            min-height: 65vh;
+            resize: none;
+        }
+
         .pickr-container .pcr-app {
             position: relative !important;
             margin: 0 auto !important;
@@ -512,20 +968,21 @@
             top: auto !important;
             transform: none !important;
         }
-        
+
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 2000;
             flex-direction: column;
         }
+
         .loading-spinner {
             width: 50px;
             height: 50px;
@@ -534,15 +991,20 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .loading-text {
             margin-top: 20px;
             color: var(--text-main);
         }
     </style>
 </head>
+
 <body class="size-medium">
 
     <div id="view-lobby" class="view active">
@@ -552,6 +1014,7 @@
                 <button id="btn-copy-mode" class="btn-icon" onclick="toggleCopyMode()">📋 +título</button>
                 <button id="btn-preview-mode" class="btn-icon" onclick="togglePreviewMode()">📄 +contenido</button>
                 <button id="btn-date-mode" class="btn-icon" onclick="toggleDateMode()">📅 +fecha</button>
+                <button id="btn-class-mode" class="btn-icon" onclick="toggleClassMode()">🏷️ +clase</button>
             </div>
             <div class="status-right">
                 <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño</button>
@@ -560,9 +1023,9 @@
                 <button id="btn-load" onclick="showLoadConfirm()">📥 Cargar</button>
             </div>
         </div>
-        
+
         <div class="classes-bar" id="classes-bar"></div>
-        
+
         <div id="notes-list" class="notes-container"></div>
         <button class="fab" onclick="createNewNote()">+</button>
     </div>
@@ -572,7 +1035,7 @@
         <button class="btn" onclick="editCurrentNote()">Editar</button>
         <h1 id="read-title" style="margin-top:30px"></h1>
         <div id="read-summary" style="font-style: italic; color: var(--text-dim); margin-bottom: 20px;"></div>
-        <div id="read-content" style="white-space: pre-wrap;"></div>
+        <div id="read-content" style="white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;"></div>
     </div>
 
     <div id="view-edit" class="view">
@@ -583,7 +1046,8 @@
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn" onclick="toggleModal('modal-summary', true)">Resumen</button>
-                <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁 Clase</button>
+                <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁
+                    Clase</button>
             </div>
         </nav>
         <input type="text" id="edit-title" class="editor-input" placeholder="Título...">
@@ -591,19 +1055,38 @@
     </div>
 
     <div id="modal-color" class="modal">
-        <div class="modal-content">
-            <h3>🎨 Personalizar Color</h3>
-            <div id="color-preview" class="color-preview"></div>
-            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;" id="color-note-title"></p>
-            <div id="pickr-container" class="pickr-container"></div>
-            <div>
-                <h4>🎨 Accesos rápidos (últimos 15)</h4>
-                <div id="recent-colors" class="recent-colors"></div>
-                <p style="color: var(--text-dim); font-size: 0.7rem; margin-top: 8px;">💡 Selecciona un color y haz clic en "Guardar" para añadirlo a accesos rápidos</p>
+        <div class="modal-content" style="max-width: 750px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin:0;">🎨 Personalizar Color</h2>
+                <button class="btn-sm" onclick="closeColorModal()">✖</button>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn" style="flex: 1;" onclick="resetNoteColorAndClose()">Resetear y cerrar</button>
-                <button class="btn" style="flex: 1;" onclick="closeColorModal()">Cerrar sin guardar</button>
+            <p style="color: var(--text-dim); margin-bottom: 20px; border-left: 3px solid var(--accent); padding-left: 10px;"
+                id="color-note-title"></p>
+
+            <div class="color-modal-grid">
+                <!-- Columna Izquierda: Selector -->
+                <div>
+                    <h4 style="margin-top: 0;">1. Selecciona un tono</h4>
+                    <div id="pickr-container" class="pickr-container"></div>
+                </div>
+
+                <!-- Columna Derecha: Preview y Recientes -->
+                <div>
+                    <h4 style="margin-top: 0;">2. Vista previa</h4>
+                    <div id="color-preview" class="color-preview">ABC</div>
+
+                    <h4>3. Colores Rápidos</h4>
+                    <div id="recent-colors" class="recent-colors"></div>
+                    <p style="color: var(--text-dim); font-size: 0.75rem;">💡 Haz clic en un color para aplicarlo al
+                        instante.</p>
+                </div>
+            </div>
+
+            <div
+                style="display: flex; gap: 12px; margin-top: 25px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <button class="btn" style="flex: 1; border-color: var(--danger); color: var(--danger);"
+                    onclick="resetNoteColorAndClose()">🗑️ Quitar color</button>
+                <button class="btn-primary" style="flex: 2;" onclick="closeColorModal()">✅ Finalizar</button>
             </div>
         </div>
     </div>
@@ -612,12 +1095,18 @@
     <div id="modal-unified-sync" class="modal">
         <div class="modal-content">
             <h2 style="color:var(--warning); margin-top:0;">🔄 Cambios Detectados en la Nube</h2>
-            <p style="margin-bottom: 15px; color: var(--text-dim);">Revisa los cambios y selecciona qué versión quieres usar para cada elemento.</p>
-            
-            <button id="mark-all-recommended" class="mark-all-btn">✓ Marcar recomendado en todo</button>
-            
+            <p style="margin-bottom: 15px; color: var(--text-dim);">Revisa los cambios y selecciona qué versión quieres
+                usar para cada elemento.</p>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <button id="mark-all-recommended" class="mark-all-btn">✓ Marcar recomendado en todo</button>
+                <button id="mark-all-local" class="mark-all-btn"
+                    style="border-color: var(--success); color: var(--success);">📤 Usar todo lo de este PC
+                    (Subir)</button>
+            </div>
+
             <div id="sync-sections-container"></div>
-            
+
             <div class="action-buttons-sync">
                 <button id="process-all-btn" class="btn-primary">✅ Procesar todo</button>
                 <button id="cancel-sync-btn" class="btn-secondary">❌ No conectar aún</button>
@@ -628,8 +1117,10 @@
     <div id="modal-summary" class="modal">
         <div class="modal-content">
             <h3>Resumen</h3>
-            <textarea id="edit-summary" class="editor-input" style="height:150px; background: #111; padding:10px;"></textarea>
-            <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-summary', false)">Cerrar</button>
+            <textarea id="edit-summary" class="editor-input"
+                style="height:150px; background: #111; padding:10px;"></textarea>
+            <button class="btn" style="width:100%; margin-top:15px;"
+                onclick="toggleModal('modal-summary', false)">Cerrar</button>
         </div>
     </div>
 
@@ -650,9 +1141,9 @@
                 <button onclick="addNewClass()">+</button>
             </div>
             <div id="classes-list" class="classes-list"></div>
-            
+
             <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-            
+
             <h3>Clases Maestras</h3>
             <div class="new-class-input">
                 <input type="text" id="new-master-name" placeholder="Nueva clase maestra...">
@@ -660,7 +1151,8 @@
             </div>
             <div id="master-classes-list" class="classes-list"></div>
 
-            <button class="btn" style="width:100%; margin-top:15px;" onclick="toggleModal('modal-class-manager', false)">Cerrar</button>
+            <button class="btn" style="width:100%; margin-top:15px;"
+                onclick="toggleModal('modal-class-manager', false)">Cerrar</button>
         </div>
     </div>
 
@@ -668,9 +1160,11 @@
     <div id="modal-master-edit" class="modal">
         <div class="modal-content">
             <h3 id="edit-master-title">Editar Clase Maestra</h3>
-            <p style="color: var(--text-dim); font-size: 0.9rem;">Selecciona las clases que pertenecerán a esta carpeta:</p>
+            <p style="color: var(--text-dim); font-size: 0.9rem;">Selecciona las clases que pertenecerán a esta carpeta:
+            </p>
             <div id="master-subclasses-selection" style="max-height: 300px; overflow-y: auto; margin: 15px 0;"></div>
-            <button class="btn" style="width:100%;" onclick="toggleModal('modal-master-edit', false)">Guardar y Cerrar</button>
+            <button class="btn" style="width:100%;" onclick="toggleModal('modal-master-edit', false)">Guardar y
+                Cerrar</button>
         </div>
     </div>
 
@@ -678,21 +1172,50 @@
         <div class="modal-content">
             <h3>Tamaño de Viñetas</h3>
             <div class="size-option" onclick="setNoteSize('large')" id="size-large">
-                <div><strong>Grande</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div></div>
-                <div class="size-preview"><div class="preview-bar large"></div><div class="preview-bar large"></div><div class="preview-bar large"></div></div>
+                <div><strong>Grande</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar large"></div>
+                    <div class="preview-bar large"></div>
+                    <div class="preview-bar large"></div>
+                </div>
             </div>
             <div class="size-option" onclick="setNoteSize('medium')" id="size-medium">
-                <div><strong>Mediano</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div></div>
-                <div class="size-preview"><div class="preview-bar medium"></div><div class="preview-bar medium"></div><div class="preview-bar medium"></div></div>
+                <div><strong>Mediano</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar medium"></div>
+                    <div class="preview-bar medium"></div>
+                    <div class="preview-bar medium"></div>
+                </div>
             </div>
             <div class="size-option" onclick="setNoteSize('compact')" id="size-compact">
-                <div><strong>Compacto</strong><div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas</div></div>
-                <div class="size-preview"><div class="preview-bar compact"></div><div class="preview-bar compact"></div><div class="preview-bar compact"></div></div>
+                <div><strong>Compacto</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar compact"></div>
+                    <div class="preview-bar compact"></div>
+                    <div class="preview-bar compact"></div>
+                </div>
             </div>
-            <button class="btn" style="width:100%; margin-top:20px;" onclick="toggleModal('modal-size', false)">Cerrar</button>
+            <div class="size-option" onclick="setNoteSize('ultra-compact')" id="size-ultra-compact">
+                <div><strong>Ultra Compacto</strong>
+                    <div style="color: var(--text-dim); font-size: 0.8rem;">Modo miniatura</div>
+                </div>
+                <div class="size-preview">
+                    <div class="preview-bar ultra-compact"></div>
+                    <div class="preview-bar ultra-compact"></div>
+                    <div class="preview-bar ultra-compact"></div>
+                </div>
+            </div>
+            <button class="btn" style="width:100%; margin-top:20px;"
+                onclick="toggleModal('modal-size', false)">Cerrar</button>
         </div>
     </div>
-    
+
     <!-- Modal de confirmación para cargar backup -->
     <div id="modal-load-confirm" class="modal">
         <div class="modal-content">
@@ -706,7 +1229,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Loading overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>
@@ -726,7 +1249,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
+
         // --- Configuración de Base de Datos Local (IndexedDB) ---
         const localDB = new Dexie("ZenWriterDB");
         localDB.version(1).stores({
@@ -744,8 +1267,9 @@
         let copyWithTitle = localStorage.getItem('zen_copy_mode') !== 'false';
         let showPreview = localStorage.getItem('zen_show_preview') !== 'false';
         let showDate = localStorage.getItem('zen_show_date') !== 'false';
+        let showClassTag = localStorage.getItem('zen_show_class') !== 'false';
         let noteSize = localStorage.getItem('zen_note_size') || 'medium';
-        
+
         let currentMasterClass = null;
 
         let isOnline = false;
@@ -753,7 +1277,7 @@
         let currentColorNoteId = null;
         let pickr = null;
         let pickrInitialized = false;
-        
+
         // Datos de sincronización
         let syncData = {
             deletedNotes: [],
@@ -764,7 +1288,7 @@
             colorChoices: {},
             contentChoices: {}
         };
-        
+
         let lobbyScrollPos = 0;
         let autoScrollInterval = null;
         let scrollSpeed = 0;
@@ -780,7 +1304,7 @@
             textEl.innerText = text;
             overlay.style.display = 'flex';
         }
-        
+
         function hideLoading() {
             const overlay = document.getElementById('loading-overlay');
             overlay.style.display = 'none';
@@ -822,7 +1346,7 @@
                 deletedNotesLog.unshift(noteId);
                 if (deletedNotesLog.length > 30) deletedNotesLog.pop();
                 localStorage.setItem('zen_deleted_log', JSON.stringify(deletedNotesLog));
-                
+
                 if (isOnline) {
                     db.ref('metadata/deleted_notes').set({
                         list: deletedNotesLog,
@@ -836,7 +1360,7 @@
             if (pickr) {
                 try {
                     pickr.destroy();
-                } catch(e) {}
+                } catch (e) { }
                 pickr = null;
             }
             pickrInitialized = false;
@@ -873,22 +1397,26 @@
             currentColorNoteId = noteId;
             const note = notes.find(n => n.id === noteId);
             if (!note) return;
-            
+
             const currentColor = note.color || '#242424';
             const titleEl = document.getElementById('color-note-title');
             const previewEl = document.getElementById('color-preview');
-            if (titleEl) titleEl.innerText = `Nota: ${note.title}`;
-            if (previewEl) previewEl.style.backgroundColor = currentColor;
-            
+            if (titleEl) titleEl.innerText = `${note.title}`;
+            if (previewEl) {
+                previewEl.style.backgroundColor = currentColor;
+                previewEl.style.color = getContrastColor(currentColor);
+                previewEl.innerText = note.title.substring(0, 20);
+            }
+
             renderRecentColors();
-            
+
             const container = document.getElementById('pickr-container');
             if (container) {
                 container.innerHTML = '';
                 const pickrWrapper = document.createElement('div');
                 pickrWrapper.id = 'pickr-inner-wrapper';
                 container.appendChild(pickrWrapper);
-                
+
                 setTimeout(() => {
                     try {
                         if (!document.getElementById('pickr-inner-wrapper')) return;
@@ -897,24 +1425,34 @@
                             theme: 'monolith',
                             default: currentColor,
                             container: container,
+                            inline: true,
+                            showAlways: true,
                             components: {
                                 preview: true,
                                 opacity: false,
                                 hue: true,
-                                interaction: { hex: true, input: true, save: true, cancel: true }
+                                interaction: { hex: true, input: true, save: true }
                             }
                         });
                         pickrInitialized = true;
-                        pickr.on('save', (color) => {
+                        pickr.on('change', (color) => {
                             if (color) {
                                 const newColor = color.toHEXA().toString();
                                 applyColorToNote(newColor);
+                                if (previewEl) {
+                                    previewEl.style.backgroundColor = newColor;
+                                    previewEl.style.color = getContrastColor(newColor);
+                                }
+                            }
+                        });
+                        pickr.on('save', (color) => {
+                            if (color) {
+                                const newColor = color.toHEXA().toString();
                                 saveRecentColor(newColor);
-                                if (previewEl) previewEl.style.backgroundColor = newColor;
                                 renderRecentColors();
                             }
                         });
-                    } catch(e) {
+                    } catch (e) {
                         console.error('Error creating Pickr:', e);
                     }
                 }, 100);
@@ -922,7 +1460,7 @@
             const modal = document.getElementById('modal-color');
             if (modal) modal.style.display = 'block';
         }
-        
+
         function applyColorToNote(color) {
             if (currentColorNoteId) {
                 const noteIndex = notes.findIndex(n => n.id === currentColorNoteId);
@@ -936,7 +1474,7 @@
                 }
             }
         }
-        
+
         function setNoteColorAndClose(color) {
             applyColorToNote(color);
             saveRecentColor(color);
@@ -974,6 +1512,13 @@
             renderNotes();
         }
 
+        function toggleClassMode() {
+            showClassTag = !showClassTag;
+            localStorage.setItem('zen_show_class', showClassTag);
+            applySettings();
+            renderNotes();
+        }
+
         // Auto-scroll
         function startAutoScroll(e) {
             const viewportHeight = window.innerHeight;
@@ -993,7 +1538,7 @@
                 autoScrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 16);
             }
         }
-        
+
         function stopAutoScroll() {
             if (autoScrollInterval) clearInterval(autoScrollInterval);
             scrollSpeed = 0;
@@ -1009,41 +1554,41 @@
             }
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', noteId);
-            
+
             const container = document.getElementById('notes-list');
             container.addEventListener('dragover', onNoteListDragOver);
             container.addEventListener('drop', noteDrop);
             document.addEventListener('dragend', onDragEndGlobal);
         }
-        
+
         function onNoteListDragOver(e) {
             e.preventDefault();
             startAutoScroll(e);
-            
+
             const container = document.getElementById('notes-list');
             const draggingCard = container.querySelector('.dragging');
             const siblings = [...container.querySelectorAll('.note-card:not(.dragging)')];
-            
+
             // Encontrar la nota que sigue a la posición del ratón
             const nextSibling = siblings.find(sibling => {
                 const rect = sibling.getBoundingClientRect();
                 const center = rect.top + rect.height / 2;
                 return e.clientY < center;
             });
-            
+
             if (nextSibling) {
                 container.insertBefore(placeholder, nextSibling);
             } else {
                 container.appendChild(placeholder);
             }
         }
-        
+
         function onDragEndGlobal() {
             stopAutoScroll();
             const container = document.getElementById('notes-list');
             container.removeEventListener('dragover', onNoteListDragOver);
             container.removeEventListener('drop', noteDrop);
-            
+
             if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
             document.querySelectorAll('.note-card').forEach(card => {
                 card.classList.remove('dragging');
@@ -1055,7 +1600,7 @@
         function noteDrop(e) {
             e.preventDefault();
             stopAutoScroll();
-            
+
             if (draggedNoteId && placeholder.parentNode) {
                 let nextNoteId = null;
                 let sibling = placeholder.nextElementSibling;
@@ -1066,11 +1611,11 @@
                     }
                     sibling = sibling.nextElementSibling;
                 }
-                
+
                 const draggedIndex = notes.findIndex(n => n.id === draggedNoteId);
                 if (draggedIndex !== -1) {
                     const [draggedNote] = notes.splice(draggedIndex, 1);
-                    
+
                     if (nextNoteId) {
                         const targetIndex = notes.findIndex(n => n.id === nextNoteId);
                         notes.splice(targetIndex, 0, draggedNote);
@@ -1089,7 +1634,7 @@
                     if (isOnline) uploadNotesOrderToCloud();
                 }
             }
-            
+
             if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
             draggedNoteId = null;
         }
@@ -1107,9 +1652,9 @@
                 alert('No estás conectado. Conéctate primero.');
                 return;
             }
-            
+
             showLoading('Subiendo backup a carpeta_segura...');
-            
+
             try {
                 const backupData = {
                     notes: notes,
@@ -1120,7 +1665,7 @@
                     timestamp: Date.now(),
                     version: '1.1'
                 };
-                
+
                 await db.ref('carpeta_segura/backup').set(backupData);
                 await db.ref('carpeta_segura/metadata').set({
                     lastBackup: Date.now(),
@@ -1128,7 +1673,7 @@
                     classCount: classes.length,
                     masterCount: masterClasses.length
                 });
-                
+
                 alert('✅ Backup guardado exitosamente en carpeta_segura');
             } catch (error) {
                 console.error('Error al subir backup:', error);
@@ -1137,7 +1682,7 @@
                 hideLoading();
             }
         }
-        
+
         function showLoadConfirm() {
             if (!isOnline) {
                 alert('No estás conectado. Conéctate primero.');
@@ -1145,42 +1690,42 @@
             }
             toggleModal('modal-load-confirm', true);
         }
-        
+
         async function loadFromSecureFolder() {
             toggleModal('modal-load-confirm', false);
             showLoading('Cargando backup desde carpeta_segura...');
-            
+
             try {
                 const snapshot = await db.ref('carpeta_segura/backup').once('value');
                 const backupData = snapshot.val();
-                
+
                 if (!backupData) {
                     alert('No se encontró ningún backup en carpeta_segura. Sube uno primero.');
                     hideLoading();
                     return;
                 }
-                
+
                 // Reemplazar todos los datos locales
                 notes = backupData.notes || [];
                 classes = backupData.classes || ['tareas', 'comidas', 'links'];
                 deletedNotesLog = backupData.deletedNotesLog || [];
                 recentColors = backupData.recentColors || ['#4a9eff', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6'];
                 masterClasses = backupData.masterClasses || [];
-                
+
                 // Asegurar que currentClass exista en las nuevas clases
                 if (!classes.includes(currentClass)) {
                     currentClass = classes[0];
                 }
-                
+
                 // Guardar en IndexedDB
                 await saveToLocal();
-                
+
                 // Renderizar UI
                 renderClasses();
                 renderMasterClassesList();
                 renderNotes();
                 applySettings();
-                
+
                 alert(`✅ Backup cargado exitosamente.\nNotas: ${notes.length}\nClases: ${classes.length}`);
             } catch (error) {
                 console.error('Error al cargar backup:', error);
@@ -1202,22 +1747,22 @@
             const cloudDeleted = deletedSnapshot.val();
             const masterSnapshot = await db.ref('metadata/master_classes').once('value');
             const cloudMaster = masterSnapshot.val();
-            
+
             // 1. Notas eliminadas
             const deletedNotes = [];
             if (cloudDeleted && cloudDeleted.list) {
                 for (const id of cloudDeleted.list) {
                     if (notes.find(n => n.id === id)) {
                         const note = notes.find(n => n.id === id);
-                        deletedNotes.push({ 
-                            id, 
+                        deletedNotes.push({
+                            id,
                             title: note?.title || id,
                             recommended: 'delete'
                         });
                     }
                 }
             }
-            
+
             // 2. Clases
             let classChanges = null;
             if (cloudClasses && cloudClasses.list) {
@@ -1231,7 +1776,7 @@
                     };
                 }
             }
-            
+
             // 3. Colores
             const colorChanges = [];
             for (const note of notes) {
@@ -1246,7 +1791,7 @@
                     });
                 }
             }
-            
+
             // 4. Conflictos de contenido
             const contentConflicts = [];
             for (const id in cloudNotes) {
@@ -1279,8 +1824,24 @@
                     };
                 }
             }
-            
-            return { deletedNotes, classChanges, colorChanges, contentConflicts, masterChanges };
+
+            // 6. Orden de las notas (Detectar si es diferente)
+            let orderConflict = null;
+            if (cloudOrder) {
+                // Comparamos el orden actual con el de la nube
+                const isOrderSame = notes.every((n, i) => {
+                    const cloudPos = cloudOrder[n.id];
+                    return cloudPos && cloudPos.order === i;
+                });
+
+                if (!isOrderSame) {
+                    orderConflict = {
+                        recommended: 'local' // Por defecto sugerimos local si el usuario está conectando
+                    };
+                }
+            }
+
+            return { deletedNotes, classChanges, colorChanges, contentConflicts, masterChanges, cloudOrder, orderConflict };
         }
 
         // Función para comparar carpetas sin importar si Firebase borró los arrays vacíos
@@ -1295,11 +1856,11 @@
             }
             return true;
         }
-        
+
         function renderUnifiedModal(data) {
             const container = document.getElementById('sync-sections-container');
             container.innerHTML = '';
-            
+
             // Sección de notas eliminadas
             if (data.deletedNotes.length > 0) {
                 const section = document.createElement('div');
@@ -1327,7 +1888,7 @@
                 });
                 container.appendChild(section);
             }
-            
+
             // Sección de clases
             if (data.classChanges) {
                 const section = document.createElement('div');
@@ -1349,7 +1910,7 @@
                 `;
                 container.appendChild(section);
             }
-            
+
             // Sección de colores
             if (data.colorChanges.length > 0) {
                 const section = document.createElement('div');
@@ -1384,7 +1945,7 @@
                 });
                 container.appendChild(section);
             }
-            
+
             // Sección de conflictos de texto
             if (data.contentConflicts.length > 0) {
                 const section = document.createElement('div');
@@ -1441,8 +2002,29 @@
                 `;
                 container.appendChild(section);
             }
-            
-            // Botón marcar todo
+
+            // Sección de Orden de Notas
+            if (data.orderConflict) {
+                const section = document.createElement('div');
+                section.className = 'sync-section';
+                section.innerHTML = `
+                    <h4>↕️ Orden de las Notas</h4>
+                    <div class="sync-item">
+                        <p style="font-size: 0.85rem; margin-bottom: 10px;">Se detectó una diferencia en cómo están organizadas las notas.</p>
+                        <div class="sync-option-group">
+                            <label class="sync-option recommended">
+                                <input type="radio" name="order_choice" value="local" checked> 💾 Mantener mi orden actual (PC)
+                            </label>
+                            <label class="sync-option">
+                                <input type="radio" name="order_choice" value="cloud"> ☁️ Usar orden de la nube
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(section);
+            }
+
+            // Botón marcar todo recomendado
             document.getElementById('mark-all-recommended').onclick = () => {
                 document.querySelectorAll('#sync-sections-container input[type="radio"]').forEach(radio => {
                     const parent = radio.closest('.sync-option');
@@ -1451,8 +2033,17 @@
                     }
                 });
             };
+
+            // Botón marcar todo local (SUBIR)
+            document.getElementById('mark-all-local').onclick = () => {
+                document.querySelectorAll('#sync-sections-container input[type="radio"]').forEach(radio => {
+                    if (radio.value === 'local' || radio.value === 'keep') {
+                        radio.checked = true;
+                    }
+                });
+            };
         }
-        
+
         async function processSyncDecisions(data) {
             // Procesar eliminaciones
             for (const note of data.deletedNotes) {
@@ -1466,7 +2057,7 @@
                     }
                 }
             }
-            
+
             // Procesar clases
             const classChoice = document.querySelector('input[name="class_choice"]:checked')?.value;
             if (classChoice === 'cloud' && data.classChanges) {
@@ -1486,7 +2077,7 @@
             } else if (masterChoice === 'local' && data.masterChanges) {
                 saveMasterClasses();
             }
-            
+
             // Procesar colores
             for (const color of data.colorChanges) {
                 const choice = document.querySelector(`input[name="color_${color.id}"]:checked`)?.value;
@@ -1501,7 +2092,7 @@
                     await db.ref('notes/' + color.id).update({ color: notes[noteIndex].color || null });
                 }
             }
-            
+
             // Procesar conflictos de contenido
             for (const conflict of data.contentConflicts) {
                 const choice = document.querySelector(`input[name="content_${conflict.id}"]:checked`)?.value;
@@ -1515,56 +2106,68 @@
                     await db.ref('notes/' + conflict.id).set(notes[noteIndex]);
                 }
             }
-            
+
+            // APLICAR ORDEN DE LA NUBE (Solo si el usuario lo eligió)
+            const orderChoice = document.querySelector('input[name="order_choice"]:checked')?.value;
+            if (orderChoice === 'cloud' && data.cloudOrder) {
+                notes.sort((a, b) => {
+                    const orderA = data.cloudOrder[a.id] ? data.cloudOrder[a.id].order : 999999;
+                    const orderB = data.cloudOrder[b.id] ? data.cloudOrder[b.id].order : 999999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return (b.timestamp || 0) - (a.timestamp || 0);
+                });
+            }
+
             saveToLocal();
             renderNotes();
             renderClasses();
         }
-        
+
         async function tryConnect() {
             if (!navigator.onLine) {
                 alert("Sin conexión.");
                 return;
             }
-            
+
             const btn = document.getElementById('btn-connect');
-            btn.innerText = "Detectando cambios..."; 
+            btn.innerText = "Detectando cambios...";
             btn.className = "syncing";
-            
+
             isOnline = true;
-            
+
             try {
                 // Obtener datos de sincronización
                 const syncDataResult = await fetchSyncData();
-                
+
                 // Si hay cambios, mostrar modal unificado
-                if (syncDataResult.deletedNotes.length > 0 || 
-                    syncDataResult.classChanges || 
-                    syncDataResult.colorChanges.length > 0 || 
+                if (syncDataResult.deletedNotes.length > 0 ||
+                    syncDataResult.classChanges ||
+                    syncDataResult.colorChanges.length > 0 ||
                     syncDataResult.contentConflicts.length > 0 ||
-                    syncDataResult.masterChanges) {
-                    
+                    syncDataResult.masterChanges ||
+                    syncDataResult.orderConflict) {
+
                     renderUnifiedModal(syncDataResult);
                     toggleModal('modal-unified-sync', true);
-                    
+
                     // Configurar botones
                     document.getElementById('process-all-btn').onclick = async () => {
                         await processSyncDecisions(syncDataResult);
                         toggleModal('modal-unified-sync', false);
-                        btn.innerText = "En Línea"; 
+                        btn.innerText = "En Línea";
                         btn.className = "online";
                     };
-                    
+
                     document.getElementById('cancel-sync-btn').onclick = () => {
                         toggleModal('modal-unified-sync', false);
-                        btn.innerText = "Conectar"; 
+                        btn.innerText = "Conectar";
                         btn.className = "offline";
                         isOnline = false;
                     };
                 } else {
                     // No hay cambios, conectar directamente
                     await syncProcess();
-                    btn.innerText = "En Línea"; 
+                    btn.innerText = "En Línea";
                     btn.className = "online";
                 }
             } catch (error) {
@@ -1580,6 +2183,11 @@
             if (!isOnline) return;
             const snapshot = await db.ref('notes').once('value');
             const cloudNotes = snapshot.val() || {};
+
+            // Descargar el orden de la nube
+            const orderSnapshot = await db.ref('metadata/notes_order').once('value');
+            const cloudOrder = orderSnapshot.val();
+
             for (const id in cloudNotes) {
                 const cloudNote = cloudNotes[id];
                 const localIdx = notes.findIndex(n => n.id === id);
@@ -1587,6 +2195,17 @@
                     notes.push(cloudNote);
                 }
             }
+
+            // Aplicar el orden descargado antes de finalizar
+            if (cloudOrder) {
+                notes.sort((a, b) => {
+                    const orderA = cloudOrder[a.id] ? cloudOrder[a.id].order : 999999;
+                    const orderB = cloudOrder[b.id] ? cloudOrder[b.id].order : 999999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return (b.timestamp || 0) - (a.timestamp || 0);
+                });
+            }
+
             await finishSync();
         }
 
@@ -1636,50 +2255,55 @@
         async function saveToLocal() {
             try {
                 if (typeof localDB === 'undefined') return;
+
+                // Asegurar que cada nota guarde su posición actual
+                notes.forEach((n, i) => n.order = i);
+
                 await localDB.notes.clear();
                 await localDB.notes.bulkAdd(notes);
-                
-                await localDB.appState.put({id: 'deleted_log', data: deletedNotesLog});
-                await localDB.appState.put({id: 'classes', data: classes});
-                await localDB.appState.put({id: 'master_classes', data: masterClasses});
-                await localDB.appState.put({id: 'recent_colors', data: recentColors});
-                
+
+                await localDB.appState.put({ id: 'deleted_log', data: deletedNotesLog });
+                await localDB.appState.put({ id: 'classes', data: classes });
+                await localDB.appState.put({ id: 'master_classes', data: masterClasses });
+                await localDB.appState.put({ id: 'recent_colors', data: recentColors });
+
                 localStorage.setItem('zen_current_class', currentClass);
                 localStorage.setItem('zen_copy_mode', copyWithTitle);
                 localStorage.setItem('zen_show_preview', showPreview);
                 localStorage.setItem('zen_show_date', showDate);
+                localStorage.setItem('zen_show_class', showClassTag);
                 localStorage.setItem('zen_note_size', noteSize);
             } catch (e) {
                 console.error("Error guardando en IndexedDB:", e);
             }
         }
-        
+
         async function saveAndRender() { await saveToLocal(); renderNotes(); }
-        function toggleModal(id, s) { 
+        function toggleModal(id, s) {
             const modal = document.getElementById(id);
             if (modal) modal.style.display = s ? 'block' : 'none';
         }
-        function showView(id) { 
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
+        function showView(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
             if (id !== 'view-lobby') window.scrollTo(0, 0);
         }
-        function showLobby() { 
-            renderNotes(); 
-            showView('view-lobby'); 
+        function showLobby() {
+            renderNotes();
+            showView('view-lobby');
             window.scrollTo(0, lobbyScrollPos);
         }
-        
+
         function escapeHtml(str) {
             if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
+            return String(str).replace(/[&<>]/g, function (m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
                 return m;
             });
         }
-        
+
         function renderNotes() {
             const list = document.getElementById('notes-list');
             if (!list) return;
@@ -1705,13 +2329,18 @@
                 if (showDate && n.date) {
                     dateHtml = `<div class="note-date">📅 ${escapeHtml(n.date)}</div>`;
                 }
+                let classTagHtml = '';
+                if (showClassTag) {
+                    classTagHtml = `<span class="note-class-tag">${escapeHtml(n.clase || 'tareas')}</span>`;
+                }
+
                 div.innerHTML = `
                     <div class="card-header">
                         <div class="card-content" onclick="openNote('${n.id}')">
                             <h3>${escapeHtml(n.title)} ${n.synced ? '' : '<span class="sync-warn">⚠️ Local</span>'}</h3>
                             ${dateHtml}
                             ${previewHtml}
-                            <span class="note-class-tag">${escapeHtml(n.clase || 'tareas')}</span>
+                            ${classTagHtml}
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <div class="drag-note-handle" title="Arrastrar para reordenar">⋮⋮</div>
@@ -1721,7 +2350,7 @@
                     <div class="card-actions" onclick="event.stopPropagation()">
                         <div class="action-buttons">
                             <button class="btn-sm" onclick="copyNote('${n.id}')">Copiar</button>
-                            <button class="btn-sm" ${!isOnline?'disabled':''} onclick="deleteNote(${originalIndex})">Borrar</button>
+                            <button class="btn-sm" ${!isOnline ? 'disabled' : ''} onclick="deleteNote(${originalIndex})">Borrar</button>
                         </div>
                     </div>
                 `;
@@ -1735,40 +2364,40 @@
                 list.appendChild(div);
             });
         }
-        
-        function copyNote(id) { 
+
+        function copyNote(id) {
             const note = notes.find(n => n.id === id);
             if (note) {
                 const textToCopy = copyWithTitle ? note.title + "\n\n" + note.content : note.content;
-                navigator.clipboard.writeText(textToCopy); 
+                navigator.clipboard.writeText(textToCopy);
                 alert(copyWithTitle ? "Copiado con título." : "Copiado sin título.");
             }
         }
-        
-        function createNewNote() { 
-            currentNoteIndex = null; 
-            document.getElementById('edit-title').value = ''; 
-            document.getElementById('edit-content').value = ''; 
-            document.getElementById('edit-summary').value = ''; 
-            showView('view-edit'); 
+
+        function createNewNote() {
+            currentNoteIndex = null;
+            document.getElementById('edit-title').value = '';
+            document.getElementById('edit-content').value = '';
+            document.getElementById('edit-summary').value = '';
+            showView('view-edit');
         }
-        
-        function openNote(id) { 
+
+        function openNote(id) {
             lobbyScrollPos = window.scrollY;
             currentNoteIndex = notes.findIndex(n => n.id === id);
-            const n = notes[currentNoteIndex]; 
-            document.getElementById('read-title').innerText = n.title; 
-            document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; 
-            document.getElementById('read-content').innerText = n.content; 
-            showView('view-read'); 
+            const n = notes[currentNoteIndex];
+            document.getElementById('read-title').innerText = n.title;
+            document.getElementById('read-summary').innerText = n.summary || "Sin resumen";
+            document.getElementById('read-content').innerText = n.content;
+            showView('view-read');
         }
-        
-        function editCurrentNote() { 
-            const n = notes[currentNoteIndex]; 
-            document.getElementById('edit-title').value = n.title; 
-            document.getElementById('edit-content').value = n.content; 
-            document.getElementById('edit-summary').value = n.summary; 
-            showView('view-edit'); 
+
+        function editCurrentNote() {
+            const n = notes[currentNoteIndex];
+            document.getElementById('edit-title').value = n.title;
+            document.getElementById('edit-content').value = n.content;
+            document.getElementById('edit-summary').value = n.summary;
+            showView('view-edit');
         }
 
         function cancelEdit() {
@@ -1777,9 +2406,9 @@
             } else {
                 // Volver a la vista de lectura de la nota actual
                 const n = notes[currentNoteIndex];
-                document.getElementById('read-title').innerText = n.title; 
-                document.getElementById('read-summary').innerText = n.summary || "Sin resumen"; 
-                document.getElementById('read-content').innerText = n.content; 
+                document.getElementById('read-title').innerText = n.title;
+                document.getElementById('read-summary').innerText = n.summary || "Sin resumen";
+                document.getElementById('read-content').innerText = n.content;
                 showView('view-read');
             }
         }
@@ -1800,7 +2429,7 @@
             const bar = document.getElementById('classes-bar');
             if (!bar) return;
             let html = '';
-            
+
             if (currentMasterClass) {
                 // Vista dentro de una Clase Maestra
                 const master = masterClasses.find(m => m.name === currentMasterClass);
@@ -1817,7 +2446,7 @@
                 masterClasses.forEach(master => {
                     html += `<button class="class-btn master" onclick="toggleMasterView('${master.name.replace(/'/g, "\\'")}')">${escapeHtml(master.name)}</button>`;
                 });
-                
+
                 // Luego las clases que NO están en ninguna clase maestra
                 classes.forEach(cls => {
                     const isInsideFolder = masterClasses.some(m => m.subClasses && m.subClasses.includes(cls));
@@ -1826,7 +2455,7 @@
                     }
                 });
             }
-            
+
             html += `<button class="class-btn add" onclick="toggleModal('modal-class-manager', true)">✏️ Gestionar</button>`;
             bar.innerHTML = html;
         }
@@ -1874,48 +2503,48 @@
         async function deleteMasterClass(name) {
             const master = masterClasses.find(m => m.name === name);
             if (!master) return;
-            
+
             const subs = master.subClasses || [];
             const notesToDelete = notes.filter(n => subs.includes(n.clase));
-            
+
             const msg = `🚨 PELIGRO: Estás a punto de eliminar la Clase Maestra "${name}".\n\n` +
-                        `Esta acción ELIMINARÁ permanentemente:\n` +
-                        `- La carpeta "${name}"\n` +
-                        `- Las clases: ${subs.join(', ') || 'ninguna'}\n` +
-                        `- ${notesToDelete.length} notas que están dentro de esas clases.\n\n` +
-                        `¿Estás SEGURO de querer continuar?`;
+                `Esta acción ELIMINARÁ permanentemente:\n` +
+                `- La carpeta "${name}"\n` +
+                `- Las clases: ${subs.join(', ') || 'ninguna'}\n` +
+                `- ${notesToDelete.length} notas que están dentro de esas clases.\n\n` +
+                `¿Estás SEGURO de querer continuar?`;
 
             if (confirm(msg)) {
                 // 1. Registrar las notas borradas para sincronización
                 notesToDelete.forEach(n => {
                     deletedNotesLog.push({ id: n.id, timestamp: Date.now() });
                 });
-                
+
                 // 2. Filtrar notas y clases
                 notes = notes.filter(n => !subs.includes(n.clase));
                 classes = classes.filter(c => !subs.includes(c));
-                
+
                 // 3. Eliminar la Clase Maestra
                 masterClasses = masterClasses.filter(m => m.name !== name);
-                
+
                 if (currentMasterClass === name) currentMasterClass = null;
-                
+
                 // 4. Guardar y actualizar todo
                 saveMasterClasses(); // Actualiza carpetas
                 saveClasses();       // Actualiza clases
                 saveToLocal();       // Actualiza notas
-                
+
                 renderClasses();
                 renderClassesList();
                 renderNotes();
-                
+
                 if (isOnline) {
                     await uploadClassesToCloud();
                     await uploadNotesOrderToCloud();
                     // Sincronizar log de eliminaciones
                     db.ref('metadata/deleted_notes').set({ list: deletedNotesLog, timestamp: Date.now() });
                 }
-                
+
                 alert(`✅ Se ha eliminado la carpeta "${name}" y todo su contenido.`);
             }
         }
@@ -1939,13 +2568,13 @@
             const container = document.getElementById('master-subclasses-selection');
             const master = masterClasses.find(m => m.name === masterName);
             document.getElementById('edit-master-title').innerText = `Carpeta: ${masterName}`;
-            
+
             let html = '';
             classes.forEach(cls => {
                 const isSelected = master.subClasses && master.subClasses.includes(cls);
                 // Buscar si la clase ya pertenece a OTRA carpeta
                 const otherMaster = masterClasses.find(m => m.name !== masterName && m.subClasses && m.subClasses.includes(cls));
-                
+
                 let statusText = '○ Excluida';
                 let statusColor = 'var(--text-dim)';
                 let action = `onclick="toggleSubclassInMaster('${masterName.replace(/'/g, "\\'")}', '${cls.replace(/'/g, "\\'")}')"`;
@@ -1996,6 +2625,15 @@
             lobbyScrollPos = 0;
             saveClasses();
             renderNotes();
+
+            // Auto-scroll de la barra de clases para mostrar la activa
+            setTimeout(() => {
+                const bar = document.getElementById('classes-bar');
+                const activeBtn = bar?.querySelector('.class-btn.active');
+                if (activeBtn) {
+                    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }, 50);
         }
 
         async function addNewClass() {
@@ -2024,7 +2662,7 @@
             if (confirm(`⚠️ ¿Eliminar la clase "${cls}"?\nSe perderán ${notesCount} notas de esta clase.`)) {
                 notes = notes.filter(n => n.clase !== cls);
                 classes = classes.filter(c => c !== cls);
-                
+
                 // Limpiar la clase de cualquier Clase Maestra que la contenga
                 masterClasses.forEach(m => {
                     m.subClasses = m.subClasses.filter(sc => sc !== cls);
@@ -2126,7 +2764,7 @@
                 div.innerHTML = `<span>${escapeHtml(cls)}</span>${isSelected ? ' ✓' : ''}`;
                 selector.appendChild(div);
             });
-            
+
             if (classes.length === 0) {
                 selector.innerHTML = '<p style="color: var(--text-dim);">No hay clases. Crea una en "Gestionar Clases"</p>';
             }
@@ -2139,8 +2777,10 @@
             if (previewBtn) previewBtn.innerText = showPreview ? '📄 +contenido' : '📄 -contenido';
             const dateBtn = document.getElementById('btn-date-mode');
             if (dateBtn) dateBtn.innerText = showDate ? '📅 +fecha' : '📅 -fecha';
+            const classTagBtn = document.getElementById('btn-class-mode');
+            if (classTagBtn) classTagBtn.innerText = showClassTag ? '🏷️ +clase' : '🏷️ -clase';
             document.body.className = `size-${noteSize}`;
-            ['large', 'medium', 'compact'].forEach(size => {
+            ['large', 'medium', 'compact', 'ultra-compact'].forEach(size => {
                 const el = document.getElementById(`size-${size}`);
                 if (el) {
                     if (size === noteSize) el.classList.add('active');
@@ -2163,6 +2803,66 @@
             toggleModal('modal-size', false);
         }
 
+        // --- GESTOS DE DESLIZAMIENTO (SWIPE) PARA CAMBIAR CLASES ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let isSwipeDisabled = false;
+
+        function handleSwipe() {
+            if (isSwipeDisabled) return;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            // Umbral: al menos 70px de desplazamiento horizontal
+            // Y que el movimiento sea predominantemente horizontal (ratio 1.8:1)
+            if (absDx > 70 && absDx > absDy * 1.8) {
+                const activeClasses = getActiveClassesList();
+                if (activeClasses.length <= 1) return;
+
+                const currentIndex = activeClasses.indexOf(currentClass);
+                let nextIndex = currentIndex;
+                const notesList = document.getElementById('notes-list');
+
+                if (dx > 0) {
+                    // Swipe Derecha -> Anterior (Empujar hacia la derecha)
+                    notesList.classList.add('swipe-exit-right');
+                    setTimeout(() => {
+                        nextIndex = (currentIndex - 1 + activeClasses.length) % activeClasses.length;
+                        selectClass(activeClasses[nextIndex]);
+                        notesList.classList.remove('swipe-exit-right');
+                        notesList.classList.add('swipe-enter-left');
+                        setTimeout(() => notesList.classList.remove('swipe-enter-left'), 200);
+                        if (window.navigator.vibrate) window.navigator.vibrate(10);
+                    }, 150);
+                } else {
+                    // Swipe Izquierda -> Siguiente (Empujar hacia la izquierda)
+                    notesList.classList.add('swipe-exit-left');
+                    setTimeout(() => {
+                        nextIndex = (currentIndex + 1) % activeClasses.length;
+                        selectClass(activeClasses[nextIndex]);
+                        notesList.classList.remove('swipe-exit-left');
+                        notesList.classList.add('swipe-enter-right');
+                        setTimeout(() => notesList.classList.remove('swipe-enter-right'), 200);
+                        if (window.navigator.vibrate) window.navigator.vibrate(10);
+                    }, 150);
+                }
+            }
+        }
+
+        function getActiveClassesList() {
+            if (currentMasterClass) {
+                const master = masterClasses.find(m => m.name === currentMasterClass);
+                return master ? (master.subClasses || []) : [];
+            } else {
+                // Clases que no están en ninguna carpeta
+                return classes.filter(cls => !masterClasses.some(m => m.subClasses && m.subClasses.includes(cls)));
+            }
+        }
+
         // Inicialización
         async function initApp() {
             showLoading('Cargando datos...');
@@ -2175,7 +2875,11 @@
                 const savedColors = await localDB.appState.get('recent_colors');
 
                 if (savedNotes.length > 0) {
-                    notes = savedNotes;
+                    // Ordenar las notas recuperadas por su propiedad 'order'
+                    notes = savedNotes.sort((a, b) => {
+                        if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+                        return (b.timestamp || 0) - (a.timestamp || 0); // Fallback: más nuevas primero
+                    });
                     deletedNotesLog = savedLog ? savedLog.data : [];
                     classes = savedClasses ? savedClasses.data : ['tareas', 'comidas', 'links'];
                     masterClasses = savedMaster ? savedMaster.data : [];
@@ -2188,15 +2892,15 @@
                         notes = oldNotes;
                         deletedNotesLog = JSON.parse(localStorage.getItem('zen_deleted_log')) || [];
                         classes = JSON.parse(localStorage.getItem('zen_classes')) || ['tareas', 'comidas', 'links'];
-                        
+
                         try {
                             const savedMasterLS = localStorage.getItem('zen_master_classes');
                             masterClasses = JSON.parse(savedMasterLS);
                             if (!Array.isArray(masterClasses)) masterClasses = [];
-                        } catch(e) { masterClasses = []; }
+                        } catch (e) { masterClasses = []; }
 
                         recentColors = JSON.parse(localStorage.getItem('zen_recent_colors')) || recentColors;
-                        
+
                         // Guardar en el nuevo sistema
                         await saveToLocal();
                         console.log("Migración completada.");
@@ -2213,9 +2917,29 @@
             renderMasterClassesList();
             renderClassSelector();
             renderNotes();
+
+            // Configurar Listeners para Swipe en el Lobby
+            const lobby = document.getElementById('view-lobby');
+            lobby.addEventListener('touchstart', (e) => {
+                // Si el toque empieza en la barra de clases, desactivar swipe
+                if (e.target.closest('#classes-bar')) {
+                    isSwipeDisabled = true;
+                } else {
+                    isSwipeDisabled = false;
+                }
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+
+            lobby.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                handleSwipe();
+            }, { passive: true });
         }
 
         initApp();
     </script>
 </body>
+
 </html>
