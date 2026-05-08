@@ -382,10 +382,6 @@
             transition: height 0.2s;
         }
 
-        .note-card.drag-over {
-            /* Eliminamos los estilos antiguos de drag-over ya que usaremos el placeholder */
-        }
-
         .note-card h3 {
             font-size: var(--note-title-size);
             margin: 0 0 4px 0;
@@ -406,6 +402,7 @@
             opacity: 0.9;
             display: -webkit-box;
             -webkit-line-clamp: var(--note-preview-lines);
+            line-clamp: var(--note-preview-lines);
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1466,10 +1463,14 @@
                 const noteIndex = notes.findIndex(n => n.id === currentColorNoteId);
                 if (noteIndex !== -1) {
                     notes[noteIndex].color = color;
+                    notes[noteIndex].timestamp = Date.now(); // Actualizar timestamp
                     saveToLocal();
                     renderNotes();
                     if (isOnline && notes[noteIndex].synced) {
-                        db.ref('notes/' + currentColorNoteId).update({ color: color });
+                        db.ref('notes/' + currentColorNoteId).update({ 
+                            color: color,
+                            timestamp: notes[noteIndex].timestamp 
+                        });
                     }
                 }
             }
@@ -1486,10 +1487,14 @@
                 const noteIndex = notes.findIndex(n => n.id === currentColorNoteId);
                 if (noteIndex !== -1) {
                     delete notes[noteIndex].color;
+                    notes[noteIndex].timestamp = Date.now(); // Actualizar timestamp al quitar color
                     saveToLocal();
                     renderNotes();
                     if (isOnline && notes[noteIndex].synced) {
-                        db.ref('notes/' + currentColorNoteId).update({ color: null });
+                        db.ref('notes/' + currentColorNoteId).update({ 
+                            color: null,
+                            timestamp: notes[noteIndex].timestamp 
+                        });
                     }
                 }
             }
@@ -1641,9 +1646,15 @@
 
         async function uploadNotesOrderToCloud() {
             if (!isOnline) return;
-            const orderData = {};
-            notes.forEach((note, index) => { orderData[note.id] = { order: index, timestamp: note.timestamp }; });
+            const timestamp = Date.now();
+            const orderData = {
+                _lastChanged: timestamp
+            };
+            notes.forEach((note, index) => { 
+                orderData[note.id] = { order: index }; 
+            });
             await db.ref('metadata/notes_order').set(orderData);
+            localStorage.setItem('zen_order_timestamp', timestamp);
         }
 
         // ==================== Funciones de carpeta_segura ====================
@@ -1825,23 +1836,48 @@
                 }
             }
 
-            // 6. Orden de las notas (Detectar si es diferente)
-            let orderConflict = null;
-            if (cloudOrder) {
-                // Comparamos el orden actual con el de la nube
-                const isOrderSame = notes.every((n, i) => {
-                    const cloudPos = cloudOrder[n.id];
-                    return cloudPos && cloudPos.order === i;
-                });
-
-                if (!isOrderSame) {
-                    orderConflict = {
-                        recommended: 'local' // Por defecto sugerimos local si el usuario está conectando
-                    };
+            // 6. Nuevas Notas (Cosas que están en la nube pero no aquí, y viceversa)
+            const missingLocally = [];
+            const missingInCloud = [];
+            for (const id in cloudNotes) {
+                if (!notes.find(n => n.id === id) && !deletedNotesLog.includes(id)) {
+                    missingLocally.push(cloudNotes[id]);
+                }
+            }
+            for (const note of notes) {
+                if (!cloudNotes[note.id]) {
+                    missingInCloud.push(note);
                 }
             }
 
-            return { deletedNotes, classChanges, colorChanges, contentConflicts, masterChanges, cloudOrder, orderConflict };
+            // 7. Orden de las notas (Comparación por timestamp)
+            let orderConflict = null;
+            if (cloudOrder && cloudOrder._lastChanged) {
+                const cloudOrderTime = cloudOrder._lastChanged;
+                const localOrderTime = parseInt(localStorage.getItem('zen_order_timestamp')) || 0;
+                
+                // Solo verificar orden si hay notas comunes
+                const commonNotes = notes.filter(n => cloudOrder[n.id]);
+                const isOrderSame = commonNotes.every((n, i) => {
+                    const cloudPos = cloudOrder[n.id];
+                    // Buscamos la posición relativa en la nube para las notas comunes
+                    const commonCloudOrder = commonNotes
+                        .map(cn => ({ id: cn.id, cloudIdx: cloudOrder[cn.id].order }))
+                        .sort((a, b) => a.cloudIdx - b.cloudIdx);
+                    
+                    return commonCloudOrder[i]?.id === n.id;
+                });
+                
+                if (!isOrderSame || (Math.abs(cloudOrderTime - localOrderTime) > 1000)) {
+                    orderConflict = {
+                        cloudTime: cloudOrderTime,
+                        localTime: localOrderTime,
+                        recommended: cloudOrderTime > localOrderTime ? 'cloud' : 'local'
+                    };
+                }
+            }
+            
+            return { deletedNotes, classChanges, colorChanges, contentConflicts, masterChanges, cloudOrder, orderConflict, missingLocally, missingInCloud };
         }
 
         // Función para comparar carpetas sin importar si Firebase borró los arrays vacíos
@@ -2007,16 +2043,21 @@
             if (data.orderConflict) {
                 const section = document.createElement('div');
                 section.className = 'sync-section';
+                const cloudDate = new Date(data.orderConflict.cloudTime).toLocaleString();
+                const localDate = new Date(data.orderConflict.localTime).toLocaleString();
+                
                 section.innerHTML = `
                     <h4>↕️ Orden de las Notas</h4>
                     <div class="sync-item">
-                        <p style="font-size: 0.85rem; margin-bottom: 10px;">Se detectó una diferencia en cómo están organizadas las notas.</p>
-                        <div class="sync-option-group">
-                            <label class="sync-option recommended">
-                                <input type="radio" name="order_choice" value="local" checked> 💾 Mantener mi orden actual (PC)
+                        <p style="font-size: 0.85rem; margin-bottom: 10px;">Se detectaron cambios en la organización.</p>
+                        <div><span class="badge badge-cloud">☁️ Nube</span> Modificado: ${cloudDate}</div>
+                        <div><span class="badge badge-local">💾 Local</span> Modificado: ${localDate}</div>
+                        <div class="sync-option-group" style="margin-top: 10px;">
+                            <label class="sync-option ${data.orderConflict.recommended === 'local' ? 'recommended' : ''}">
+                                <input type="radio" name="order_choice" value="local" ${data.orderConflict.recommended === 'local' ? 'checked' : ''}> 💾 Usar orden local
                             </label>
-                            <label class="sync-option">
-                                <input type="radio" name="order_choice" value="cloud"> ☁️ Usar orden de la nube
+                            <label class="sync-option ${data.orderConflict.recommended === 'cloud' ? 'recommended' : ''}">
+                                <input type="radio" name="order_choice" value="cloud" ${data.orderConflict.recommended === 'cloud' ? 'checked' : ''}> ☁️ Usar orden nube
                             </label>
                         </div>
                     </div>
@@ -2044,9 +2085,9 @@
             };
         }
 
-        async function processSyncDecisions(data) {
+        async function processSyncDecisions(conflictData) {
             // Procesar eliminaciones
-            for (const note of data.deletedNotes) {
+            for (const note of conflictData.deletedNotes) {
                 const choice = document.querySelector(`input[name="del_${note.id}"]:checked`)?.value;
                 if (choice === 'delete') {
                     const index = notes.findIndex(n => n.id === note.id);
@@ -2060,26 +2101,26 @@
 
             // Procesar clases
             const classChoice = document.querySelector('input[name="class_choice"]:checked')?.value;
-            if (classChoice === 'cloud' && data.classChanges) {
-                classes = [...data.classChanges.cloud];
+            if (classChoice === 'cloud' && conflictData.classChanges) {
+                classes = [...conflictData.classChanges.cloud];
                 if (!classes.includes(currentClass)) currentClass = classes[0];
                 saveClasses();
                 await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
-            } else if (classChoice === 'local' && data.classChanges) {
+            } else if (classChoice === 'local' && conflictData.classChanges) {
                 await db.ref('metadata/classes').set({ list: classes, timestamp: Date.now() });
             }
 
             // Procesar clases maestras
             const masterChoice = document.querySelector('input[name="master_choice"]:checked')?.value;
-            if (masterChoice === 'cloud' && data.masterChanges) {
-                masterClasses = [...data.masterChanges.cloud];
+            if (masterChoice === 'cloud' && conflictData.masterChanges) {
+                masterClasses = [...conflictData.masterChanges.cloud];
                 saveMasterClasses();
-            } else if (masterChoice === 'local' && data.masterChanges) {
+            } else if (masterChoice === 'local' && conflictData.masterChanges) {
                 saveMasterClasses();
             }
 
             // Procesar colores
-            for (const color of data.colorChanges) {
+            for (const color of conflictData.colorChanges) {
                 const choice = document.querySelector(`input[name="color_${color.id}"]:checked`)?.value;
                 const noteIndex = notes.findIndex(n => n.id === color.id);
                 if (noteIndex !== -1) {
@@ -2094,7 +2135,7 @@
             }
 
             // Procesar conflictos de contenido
-            for (const conflict of data.contentConflicts) {
+            for (const conflict of conflictData.contentConflicts) {
                 const choice = document.querySelector(`input[name="content_${conflict.id}"]:checked`)?.value;
                 const noteIndex = notes.findIndex(n => n.id === conflict.id);
                 if (noteIndex !== -1) {
@@ -2107,17 +2148,32 @@
                 }
             }
 
-            // APLICAR ORDEN DE LA NUBE (Solo si el usuario lo eligió)
+            // 1. PROCESAR NOTAS NUEVAS (Merge automático)
+            // Notas que están en la nube pero no aquí
+            for (const newNote of conflictData.missingLocally) {
+                notes.push(newNote);
+            }
+            // Notas locales que no están en la nube (Subirlas)
+            for (const localNote of conflictData.missingInCloud) {
+                localNote.synced = true;
+                await db.ref('notes/' + localNote.id).set(localNote);
+            }
+
+            // 2. APLICAR ORDEN FINAL
             const orderChoice = document.querySelector('input[name="order_choice"]:checked')?.value;
-            if (orderChoice === 'cloud' && data.cloudOrder) {
+            if (orderChoice === 'cloud' && conflictData.cloudOrder) {
                 notes.sort((a, b) => {
-                    const orderA = data.cloudOrder[a.id] ? data.cloudOrder[a.id].order : 999999;
-                    const orderB = data.cloudOrder[b.id] ? data.cloudOrder[b.id].order : 999999;
+                    const orderA = conflictData.cloudOrder[a.id] ? conflictData.cloudOrder[a.id].order : 999999;
+                    const orderB = conflictData.cloudOrder[b.id] ? conflictData.cloudOrder[b.id].order : 999999;
                     if (orderA !== orderB) return orderA - orderB;
                     return (b.timestamp || 0) - (a.timestamp || 0);
                 });
+                localStorage.setItem('zen_order_timestamp', conflictData.cloudOrder._lastChanged);
+            } else {
+                // Si mantenemos local o no hay conflicto, subimos nuestro orden actual para unificar
+                await uploadNotesOrderToCloud();
             }
-
+            
             saveToLocal();
             renderNotes();
             renderClasses();
@@ -2567,38 +2623,69 @@
         function renderMasterSubclassSelection(masterName) {
             const container = document.getElementById('master-subclasses-selection');
             const master = masterClasses.find(m => m.name === masterName);
-            document.getElementById('edit-master-title').innerText = `Carpeta: ${masterName}`;
+            document.getElementById('edit-master-title').innerText = `Contenido de: ${masterName}`;
+            
+            const subList = master.subClasses || [];
+            
+            if (subList.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center; padding: 20px;">Esta carpeta está vacía.<br>Envía clases aquí desde "Gestionar Clases".</p>';
+                toggleModal('modal-master-edit', true);
+                return;
+            }
 
-            let html = '';
-            classes.forEach(cls => {
-                const isSelected = master.subClasses && master.subClasses.includes(cls);
-                // Buscar si la clase ya pertenece a OTRA carpeta
-                const otherMaster = masterClasses.find(m => m.name !== masterName && m.subClasses && m.subClasses.includes(cls));
+            container.innerHTML = '';
+            subList.forEach((cls, index) => {
+                const div = document.createElement('div');
+                div.className = 'class-item';
+                div.setAttribute('draggable', 'true');
+                
+                // Drag and drop dentro de la carpeta
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', index);
+                    e.target.classList.add('dragging');
+                };
+                div.ondragover = (e) => {
+                    e.preventDefault();
+                    e.target.closest('.class-item')?.classList.add('drag-over');
+                };
+                div.ondragleave = (e) => e.target.closest('.class-item')?.classList.remove('drag-over');
+                div.ondrop = (e) => {
+                    e.preventDefault();
+                    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                    if (fromIdx !== index) {
+                        const [moved] = master.subClasses.splice(fromIdx, 1);
+                        master.subClasses.splice(index, 0, moved);
+                        saveMasterClasses();
+                        renderMasterSubclassSelection(masterName);
+                    }
+                };
+                div.ondragend = (e) => e.target.classList.remove('dragging');
 
-                let statusText = '○ Excluida';
-                let statusColor = 'var(--text-dim)';
-                let action = `onclick="toggleSubclassInMaster('${masterName.replace(/'/g, "\\'")}', '${cls.replace(/'/g, "\\'")}')"`;
-                let cursor = 'pointer';
-
-                if (isSelected) {
-                    statusText = '● Incluida';
-                    statusColor = 'var(--success)';
-                } else if (otherMaster) {
-                    statusText = `✖ Ocupada (${otherMaster.name})`;
-                    statusColor = 'var(--danger)';
-                    action = ''; // Bloqueamos la acción
-                    cursor = 'not-allowed';
-                }
-
-                html += `
-                    <div class="class-item" style="cursor: ${cursor};" ${action}>
-                        <span>${escapeHtml(cls)}</span>
-                        <span style="color: ${statusColor}">${statusText}</span>
+                div.innerHTML = `
+                    <div class="class-item-left">
+                        <span class="drag-handle">⋮⋮</span>
+                        <span class="class-name">${escapeHtml(cls)}</span>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-sm" style="border-color: var(--warning); color: var(--warning);" onclick="removeClassFromMaster('${cls.replace(/'/g, "\\'")}', '${masterName.replace(/'/g, "\\'")}')">Sacar</button>
+                        <button class="delete-class" onclick="deleteClass('${cls.replace(/'/g, "\\'")}')">Eliminar</button>
                     </div>
                 `;
+                container.appendChild(div);
             });
-            container.innerHTML = html;
             toggleModal('modal-master-edit', true);
+        }
+
+        function removeClassFromMaster(cls, masterName) {
+            if (confirm(`¿Deseas sacar la clase "${cls}" de la carpeta "${masterName}"?`)) {
+                const master = masterClasses.find(m => m.name === masterName);
+                if (master) {
+                    master.subClasses = master.subClasses.filter(c => c !== cls);
+                    saveMasterClasses();
+                    renderMasterSubclassSelection(masterName);
+                    renderClassesList();
+                }
+            }
         }
 
         function renderMasterClassesList() {
@@ -2620,20 +2707,22 @@
             });
         }
 
-        function selectClass(cls) {
+        function selectClass(cls, shouldScroll = false) {
             currentClass = cls;
             lobbyScrollPos = 0;
             saveClasses();
             renderNotes();
 
-            // Auto-scroll de la barra de clases para mostrar la activa
-            setTimeout(() => {
-                const bar = document.getElementById('classes-bar');
-                const activeBtn = bar?.querySelector('.class-btn.active');
-                if (activeBtn) {
-                    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
-            }, 50);
+            // Auto-scroll de la barra de clases SOLO si se solicita (ej. en swipe)
+            if (shouldScroll) {
+                setTimeout(() => {
+                    const bar = document.getElementById('classes-bar');
+                    const activeBtn = bar?.querySelector('.class-btn.active');
+                    if (activeBtn) {
+                        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    }
+                }, 50);
+            }
         }
 
         async function addNewClass() {
@@ -2722,24 +2811,73 @@
             const list = document.getElementById('classes-list');
             if (!list) return;
             list.innerHTML = '';
-            classes.forEach((cls, index) => {
+            
+            // Solo mostrar clases que NO están en ninguna carpeta
+            const independentClasses = classes.filter(cls => !masterClasses.some(m => m.subClasses && m.subClasses.includes(cls)));
+            
+            independentClasses.forEach((cls, index) => {
                 const div = document.createElement('div');
                 div.className = 'class-item';
                 div.setAttribute('draggable', 'true');
-                div.addEventListener('dragstart', (e) => classDragStart(e, index));
-                div.addEventListener('dragover', (e) => classDragOver(e, index));
-                div.addEventListener('dragleave', classDragLeave);
-                div.addEventListener('drop', (e) => classDrop(e, index));
-                div.addEventListener('dragend', classDragEnd);
+                
+                // Re-mapear el Drag and Drop para trabajar con la lista filtrada
+                div.addEventListener('dragstart', (e) => {
+                    draggedClassItem = classes.indexOf(cls);
+                    e.target.closest('.class-item')?.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', draggedClassItem);
+                });
+                div.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.target.closest('.class-item')?.classList.add('drag-over');
+                });
+                div.addEventListener('dragleave', (e) => e.target.closest('.class-item')?.classList.remove('drag-over'));
+                div.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const targetIndex = classes.indexOf(cls);
+                    if (draggedClassItem !== null && draggedClassItem !== targetIndex) {
+                        const [removed] = classes.splice(draggedClassItem, 1);
+                        classes.splice(targetIndex, 0, removed);
+                        saveClasses();
+                        renderClassesList();
+                        renderClasses();
+                    }
+                });
+
                 div.innerHTML = `
                     <div class="class-item-left">
                         <span class="drag-handle">⋮⋮</span>
                         <span class="class-name">${escapeHtml(cls)}</span>
                     </div>
-                    <button class="delete-class" onclick="deleteClass('${cls.replace(/'/g, "\\'")}')">Eliminar</button>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-sm" style="border-color: var(--accent); color: var(--accent);" onclick="promptMoveToMaster('${cls.replace(/'/g, "\\'")}')">Enviar a...</button>
+                        <button class="delete-class" onclick="deleteClass('${cls.replace(/'/g, "\\'")}')">Eliminar</button>
+                    </div>
                 `;
                 list.appendChild(div);
             });
+            
+            if (independentClasses.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-dim); text-align: center; font-size: 0.8rem;">Todas las clases están organizadas en carpetas.</p>';
+            }
+        }
+
+        function promptMoveToMaster(cls) {
+            if (masterClasses.length === 0) {
+                alert("Crea primero una Clase Maestra (Carpeta) para poder mover clases.");
+                return;
+            }
+            const options = masterClasses.map((m, i) => `${i + 1}. ${m.name}`).join("\n");
+            const choice = prompt(`Enviar "${cls}" a:\n\n${options}\n\nIngresa el número de la carpeta:`);
+            
+            const idx = parseInt(choice) - 1;
+            if (masterClasses[idx]) {
+                const master = masterClasses[idx];
+                if (!master.subClasses) master.subClasses = [];
+                master.subClasses.push(cls);
+                saveMasterClasses();
+                renderClassesList();
+                alert(`Clase "${cls}" movida a "${master.name}"`);
+            }
         }
 
         function renderClassSelector() {
@@ -2832,7 +2970,7 @@
                     notesList.classList.add('swipe-exit-right');
                     setTimeout(() => {
                         nextIndex = (currentIndex - 1 + activeClasses.length) % activeClasses.length;
-                        selectClass(activeClasses[nextIndex]);
+                        selectClass(activeClasses[nextIndex], true);
                         notesList.classList.remove('swipe-exit-right');
                         notesList.classList.add('swipe-enter-left');
                         setTimeout(() => notesList.classList.remove('swipe-enter-left'), 200);
@@ -2843,7 +2981,7 @@
                     notesList.classList.add('swipe-exit-left');
                     setTimeout(() => {
                         nextIndex = (currentIndex + 1) % activeClasses.length;
-                        selectClass(activeClasses[nextIndex]);
+                        selectClass(activeClasses[nextIndex], true);
                         notesList.classList.remove('swipe-exit-left');
                         notesList.classList.add('swipe-enter-right');
                         setTimeout(() => notesList.classList.remove('swipe-enter-right'), 200);
