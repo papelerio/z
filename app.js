@@ -1113,16 +1113,62 @@
             const modal = document.getElementById(id);
             if (modal) modal.style.display = s ? 'block' : 'none';
         }
-        function showView(id) {
+        let historyStackDepth = 0;
+
+        function showView(id, fromPopState = false) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             if (id !== 'view-lobby') window.scrollTo(0, 0);
+
+            if (!fromPopState && id !== 'view-lobby') {
+                history.pushState({ viewId: id }, "");
+                historyStackDepth++;
+            }
         }
-        function showLobby() {
+
+        function showLobby(fromPopState = false) {
             if (typeof deactivateTTS === 'function') deactivateTTS();
             renderNotes();
-            showView('view-lobby');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-lobby').classList.add('active');
             window.scrollTo(0, lobbyScrollPos);
+        }
+
+        let allowBackAction = false;
+
+        window.addEventListener('popstate', (e) => {
+            const activeView = document.querySelector('.view.active');
+            if (!activeView) return;
+            const viewId = activeView.id;
+
+            // Bloquear botón atrás físico en edición para no perder progreso al cerrar teclado
+            if (viewId === 'view-edit' && !allowBackAction) {
+                history.pushState({ viewId: 'view-edit' }, "");
+                return;
+            }
+
+            allowBackAction = false;
+            
+            if (historyStackDepth > 0) historyStackDepth--;
+
+            if (viewId === 'view-read') {
+                showLobby(true);
+            } else if (viewId === 'view-edit') {
+                if (currentNoteIndex !== null) {
+                    cancelEditInternal();
+                } else {
+                    showLobby(true);
+                }
+            }
+        });
+
+        function goBack() {
+            allowBackAction = true;
+            if (historyStackDepth > 0) {
+                history.back();
+            } else {
+                showLobby(true);
+            }
         }
 
         function escapeHtml(str) {
@@ -1268,23 +1314,19 @@
             requestAnimationFrame(() => autoResizeSummary(summaryEl));
         }
 
-        function cancelEdit() {
-            if (currentNoteIndex === null) {
-                showLobby();
-            } else {
-                // Volver a la vista de lectura de la nota actual
-                const n = notes[currentNoteIndex];
-                document.getElementById('read-title').innerText = n.title;
-                
-                const summaryEl = document.getElementById('read-summary');
-                summaryEl.innerText = n.summary || "Sin resumen";
-                summaryEl.classList.remove('expanded'); // Reset a colapsado
-                
-                document.getElementById('read-content').innerText = n.content;
-                const contentLen = (n.content || '').length;
-                document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
-                showView('view-read');
-            }
+        function cancelEditInternal() {
+            // Volver a la vista de lectura de la nota actual sin push state
+            const n = notes[currentNoteIndex];
+            document.getElementById('read-title').innerText = n.title;
+            
+            const summaryEl = document.getElementById('read-summary');
+            summaryEl.innerText = n.summary || "Sin resumen";
+            summaryEl.classList.remove('expanded'); // Reset a colapsado
+            
+            document.getElementById('read-content').innerText = n.content;
+            const contentLen = (n.content || '').length;
+            document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
+            showView('view-read', true);
         }
 
         async function saveClasses() {
