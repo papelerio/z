@@ -53,29 +53,18 @@
             <!-- Botón Play -->
             <button id="tts-play-btn" class="tts-play-btn" onclick="ttsTogglePlay()">▶</button>
 
-            <!-- Sliders PICH y VLCD -->
+            <!-- Slider Velocidad -->
             <div class="tts-sliders">
                 <div class="tts-slider-row">
-                    <span class="tts-slider-label">PICH:</span>
-                    <input type="range" id="tts-pitch-slider" class="tts-slider" min="0.5" max="2" step="0.1" value="1.0" oninput="ttsPitchChange(this.value)" onchange="ttsApplySettings()">
-                    <span id="tts-pitch-val" class="tts-slider-val">1.0</span>
-                </div>
-                <div class="tts-slider-row">
-                    <span class="tts-slider-label">VLCD:</span>
-                    <input type="range" id="tts-rate-slider" class="tts-slider" min="0.1" max="4.0" step="0.1" value="1.0" oninput="ttsRateChange(this.value)" onchange="ttsApplySettings()">
+                    <span class="tts-slider-label">Vel:</span>
+                    <input type="range" id="tts-rate-slider" class="tts-slider" min="0.5" max="3.0" step="0.1" value="1.0" oninput="ttsRateChange(this.value)">
                     <span id="tts-rate-val" class="tts-slider-val">1.0</span>
                 </div>
             </div>
 
-            <!-- Botones apilados: X arriba, ⚙️ abajo -->
+            <!-- Botón cerrar -->
             <div class="tts-right-btns">
                 <button class="tts-close-btn" onclick="deactivateTTS()">✕</button>
-                <div style="position: relative;">
-                    <button class="tts-settings-btn" onclick="toggleTTSVoiceMenu()">⚙️</button>
-                    <div id="tts-voice-menu" class="tts-voice-menu tts-hidden">
-                        <select id="tts-voice-select" onchange="ttsSelectVoice(this.value)"></select>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -84,7 +73,7 @@
         <nav style="margin-bottom: 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
             <div style="display: flex; gap: 10px;">
                 <button class="btn" style="color: var(--accent);" onclick="saveNote()">✔ Guardar</button>
-                <button class="btn" style="color: var(--danger);" onclick="goBack()">✖ Cancelar</button>
+                <button class="btn" style="color: var(--danger);" onclick="cancelEditInternal()">✖ Cancelar</button>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn" onclick="toggleModal('modal-class-select', true)" style="color: var(--warning);">📁

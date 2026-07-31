@@ -1299,3 +1299,21 @@
             background: rgba(46, 204, 113, 0.15);
             border-radius: 3px;
         }
+
+        /* Estilo para links en las notas */
+        .note-link {
+            color: #52b1ff;
+            text-decoration: underline;
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+
+        .note-link:hover {
+            color: #8cd0ff;
+        }
+
+        .note-link.copied-green {
+            color: #2ecc71 !important;
+            text-shadow: 0 0 8px rgba(46, 204, 113, 0.6);
+            transition: color 0.1s ease;
+        }

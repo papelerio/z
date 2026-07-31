@@ -1121,7 +1121,7 @@
             if (id !== 'view-lobby') window.scrollTo(0, 0);
 
             if (!fromPopState && id !== 'view-lobby') {
-                history.pushState({ viewId: id }, "");
+                try { history.pushState({ viewId: id }, ""); } catch(e) {}
                 historyStackDepth++;
             }
         }
@@ -1131,7 +1131,10 @@
             renderNotes();
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-lobby').classList.add('active');
-            window.scrollTo(0, lobbyScrollPos);
+            // Diferir el scroll para que el navegador termine de pintar las notas reconstruidas
+            setTimeout(() => {
+                window.scrollTo(0, lobbyScrollPos);
+            }, 30);
         }
 
         let allowBackAction = false;
@@ -1141,9 +1144,8 @@
             if (!activeView) return;
             const viewId = activeView.id;
 
-            // Bloquear botón atrás físico en edición para no perder progreso al cerrar teclado
             if (viewId === 'view-edit' && !allowBackAction) {
-                history.pushState({ viewId: 'view-edit' }, "");
+                try { history.pushState({ viewId: 'view-edit' }, ""); } catch(e) {}
                 return;
             }
 
@@ -1165,7 +1167,19 @@
         function goBack() {
             allowBackAction = true;
             if (historyStackDepth > 0) {
-                history.back();
+                try { 
+                    history.back(); 
+                    // En protocolo file:, history.back() no siempre dispara popstate confiablemente
+                    if (window.location.protocol === 'file:') throw new Error('Local file navigation');
+                } catch(e) {
+                    historyStackDepth--;
+                    const activeView = document.querySelector('.view.active');
+                    if (activeView && activeView.id === 'view-edit' && currentNoteIndex !== null) {
+                        cancelEditInternal();
+                    } else {
+                        showLobby(true);
+                    }
+                }
             } else {
                 showLobby(true);
             }
@@ -1286,6 +1300,23 @@
             requestAnimationFrame(() => autoResizeSummary(summaryEl));
         }
 
+        function linkify(text) {
+            if (!text) return '';
+            const escaped = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+
+            const urlPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+            const pseudoUrlPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+            
+            let formatted = escaped.replace(urlPattern, '<a href="$1" target="_blank" class="note-link">$1</a>');
+            formatted = formatted.replace(pseudoUrlPattern, '$1<a href="http://$2" target="_blank" class="note-link">$2</a>');
+            return formatted;
+        }
+
         function openNote(id) {
             lobbyScrollPos = window.scrollY;
             currentNoteIndex = notes.findIndex(n => n.id === id);
@@ -1296,7 +1327,7 @@
             summaryEl.innerText = n.summary || "Sin resumen";
             summaryEl.classList.remove('expanded'); // Inicia colapsado por defecto
             
-            document.getElementById('read-content').innerText = n.content;
+            document.getElementById('read-content').innerHTML = linkify(n.content);
             const contentLen = (n.content || '').length;
             document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
             showView('view-read');
@@ -1315,18 +1346,23 @@
         }
 
         function cancelEditInternal() {
-            // Volver a la vista de lectura de la nota actual sin push state
-            const n = notes[currentNoteIndex];
-            document.getElementById('read-title').innerText = n.title;
-            
-            const summaryEl = document.getElementById('read-summary');
-            summaryEl.innerText = n.summary || "Sin resumen";
-            summaryEl.classList.remove('expanded'); // Reset a colapsado
-            
-            document.getElementById('read-content').innerText = n.content;
-            const contentLen = (n.content || '').length;
-            document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
-            showView('view-read', true);
+            if (currentNoteIndex === null) {
+                // Si estábamos creando una nueva nota, volver al lobby
+                showLobby(true);
+            } else {
+                // Volver a la vista de lectura de la nota actual sin push state
+                const n = notes[currentNoteIndex];
+                document.getElementById('read-title').innerText = n.title;
+                
+                const summaryEl = document.getElementById('read-summary');
+                summaryEl.innerText = n.summary || "Sin resumen";
+                summaryEl.classList.remove('expanded'); // Reset a colapsado
+                
+                document.getElementById('read-content').innerHTML = linkify(n.content);
+                const contentLen = (n.content || '').length;
+                document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
+                showView('view-read', true);
+            }
         }
 
         async function saveClasses() {
@@ -1979,28 +2015,111 @@
                     summaryEl.classList.toggle('expanded');
                 }
             });
+
+            // Configurar delegación para enlaces (.note-link) en #read-content (toques vs mouse en PC)
+            const readContent = document.getElementById('read-content');
+            if (readContent) {
+                let linkTouchTimer = null;
+                let linkLongPressed = false;
+                let linkTouchStartX = 0;
+                let linkTouchStartY = 0;
+                let linkActiveElement = null;
+
+                readContent.addEventListener('touchstart', (e) => {
+                    const link = e.target.closest('.note-link');
+                    if (!link) return;
+
+                    linkActiveElement = link;
+                    linkLongPressed = false;
+                    const touch = e.touches[0];
+                    linkTouchStartX = touch.clientX;
+                    linkTouchStartY = touch.clientY;
+
+                    // Tap prolongado (> 500ms) abre el enlace
+                    linkTouchTimer = setTimeout(() => {
+                        linkLongPressed = true;
+                        const href = link.getAttribute('href');
+                        if (href) {
+                            window.open(href, '_blank');
+                        }
+                    }, 500);
+                }, { passive: true });
+
+                readContent.addEventListener('touchmove', (e) => {
+                    if (!linkActiveElement) return;
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - linkTouchStartX;
+                    const dy = touch.clientY - linkTouchStartY;
+                    // Si se mueve más de 10px, es scroll; cancelar acción
+                    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                        clearTimeout(linkTouchTimer);
+                        linkTouchTimer = null;
+                        linkActiveElement = null;
+                    }
+                }, { passive: true });
+
+                readContent.addEventListener('touchend', (e) => {
+                    if (!linkActiveElement) return;
+                    clearTimeout(linkTouchTimer);
+                    linkTouchTimer = null;
+
+                    if (!linkLongPressed) {
+                        const endX = e.changedTouches[0].clientX;
+                        const endY = e.changedTouches[0].clientY;
+                        const dx = Math.abs(endX - linkTouchStartX);
+                        const dy = Math.abs(endY - linkTouchStartY);
+
+                        // Si fue un tap corto intencional (sin desplazarse)
+                        if (dx < 10 && dy < 10) {
+                            e.preventDefault(); // Evitar que el navegador abra el enlace directamente
+                            const el = linkActiveElement;
+                            const href = el.getAttribute('href');
+                            if (href) {
+                                navigator.clipboard.writeText(href).then(() => {
+                                    el.classList.add('copied-green');
+                                    setTimeout(() => {
+                                        el.classList.remove('copied-green');
+                                    }, 1000);
+                                }).catch(err => {
+                                    console.error('Error al copiar link:', err);
+                                });
+                            }
+                        }
+                    }
+                    linkActiveElement = null;
+                    linkLongPressed = false;
+                }, { passive: false });
+
+                // Controlar clic en PC
+                readContent.addEventListener('click', (e) => {
+                    const link = e.target.closest('.note-link');
+                    if (!link) return;
+                    // En móviles evitamos que el clic simulado por el navegador abra el enlace
+                    if (e.pointerType === 'touch' || (e.clientX === 0 && e.clientY === 0)) {
+                        e.preventDefault();
+                    }
+                });
+            }
         }
 
         // =============================================
-        // TTS - Lector de Voz
+        // TTS - Lector de Voz (Google Translate TTS)
         // =============================================
-        const tts_synth = window.speechSynthesis;
-        let ttsActive = false;
-        let ttsWords = [];
-        let ttsCurrentIndex = 0;
-        let ttsVoices = [];
-        let ttsSelectedVoiceIndex = -1;
-        let ttsPlaying = false;
-        let ttsCurrentUtterance = null;
-        let ttsSentences = [];
-        let ttsPitch = parseFloat(localStorage.getItem('zen_tts_pitch')) || 1.0;
-        let ttsRate = parseFloat(localStorage.getItem('zen_tts_rate')) || 1.0;
 
-        function ttsPitchChange(val) {
-            ttsPitch = parseFloat(val);
-            localStorage.setItem('zen_tts_pitch', ttsPitch);
-            const label = document.getElementById('tts-pitch-val');
-            if (label) label.innerText = ttsPitch.toFixed(1);
+        const TTS_LANG      = 'es';   // Español — Google Translate TTS
+        let ttsActive       = false;
+        let ttsPlaying      = false;
+        let ttsWords        = [];
+        let ttsSentences    = [];
+        let ttsCurrentIndex = 0;
+        let ttsRate         = parseFloat(localStorage.getItem('zen_tts_rate')) || 1.0;
+        let ttsAudio        = null;
+        let ttsChunkQueue   = [];
+        let ttsChunkIndex   = 0;
+        let ttsSession      = 0;   // token anti-carrera: invalida callbacks de sesiones viejas
+
+        function ttsGoogleURL(text) {
+            return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${TTS_LANG}&q=${encodeURIComponent(text)}`;
         }
 
         function ttsRateChange(val) {
@@ -2008,173 +2127,105 @@
             localStorage.setItem('zen_tts_rate', ttsRate);
             const label = document.getElementById('tts-rate-val');
             if (label) label.innerText = ttsRate.toFixed(1);
+            if (ttsAudio) ttsAudio.playbackRate = ttsRate;
         }
 
-        function ttsApplySettings() {
-            if (ttsPlaying) ttsPlayFrom(ttsCurrentIndex);
-        }
-
-        function loadTTSVoices() {
-            ttsVoices = tts_synth.getVoices();
-            const select = document.getElementById('tts-voice-select');
-            const label = document.getElementById('tts-voice-label');
-            if (!select) return;
-            select.innerHTML = '';
-
-            let firstSpanish = -1;
-            let savedVoiceURI = localStorage.getItem('zen_tts_voice_uri');
-            let savedVoiceIndex = -1;
-
-            ttsVoices.forEach((voice, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.textContent = `${voice.name} (${voice.lang})`;
-                if (voice.lang.includes('es') && firstSpanish === -1) firstSpanish = index;
-                if (voice.voiceURI === savedVoiceURI) savedVoiceIndex = index;
-                select.appendChild(opt);
-            });
-
-            if (savedVoiceIndex !== -1) {
-                select.value = savedVoiceIndex;
-                ttsSelectedVoiceIndex = savedVoiceIndex;
-            } else if (firstSpanish !== -1) {
-                select.value = firstSpanish;
-                ttsSelectedVoiceIndex = firstSpanish;
-            } else if (ttsVoices.length > 0) {
-                ttsSelectedVoiceIndex = 0;
-                select.value = 0;
-            }
-
-            if (label && ttsVoices[ttsSelectedVoiceIndex]) {
-                label.textContent = ttsVoices[ttsSelectedVoiceIndex].name.split(' ').slice(0, 2).join(' ');
-            }
-        }
-
-        function ttsSelectVoice(val) {
-            ttsSelectedVoiceIndex = parseInt(val);
-            const label = document.getElementById('tts-voice-label');
-            if (ttsVoices[ttsSelectedVoiceIndex]) {
-                if (label) label.textContent = ttsVoices[ttsSelectedVoiceIndex].name.split(' ').slice(0, 2).join(' ');
-                localStorage.setItem('zen_tts_voice_uri', ttsVoices[ttsSelectedVoiceIndex].voiceURI);
-            }
-            tts_synth.cancel();
-            ttsPlaying = false;
-            updateTTSPlayBtn();
-            document.getElementById('tts-voice-menu').classList.add('tts-hidden');
-        }
-
+        // --- Activar / desactivar barra ---
         function activateTTS() {
             if (ttsActive) return;
             ttsActive = true;
-
             document.getElementById('tts-bar').classList.remove('tts-hidden');
             document.getElementById('btn-tts-activate').classList.add('tts-hidden');
-            // Más padding para que la barra no tape el contenido
-            document.getElementById('read-content').style.paddingBottom = '95px';
-
-            const pitchSlider = document.getElementById('tts-pitch-slider');
-            if(pitchSlider) pitchSlider.value = ttsPitch;
-            const pitchLabel = document.getElementById('tts-pitch-val');
-            if(pitchLabel) pitchLabel.innerText = ttsPitch.toFixed(1);
-
             const rateSlider = document.getElementById('tts-rate-slider');
-            if(rateSlider) rateSlider.value = ttsRate;
+            if (rateSlider) rateSlider.value = ttsRate;
             const rateLabel = document.getElementById('tts-rate-val');
-            if(rateLabel) rateLabel.innerText = ttsRate.toFixed(1);
-
+            if (rateLabel) rateLabel.innerText = ttsRate.toFixed(1);
             renderTTSWords();
-            loadTTSVoices();
             ttsCurrentIndex = 0;
         }
 
         function deactivateTTS() {
             if (!ttsActive) return;
-            tts_synth.cancel();
-            ttsActive = false;
-            ttsPlaying = false;
-            ttsWords = [];
-            ttsSentences = [];
+            ttsStop();
+            ttsActive       = false;
+            ttsWords        = [];
+            ttsSentences    = [];
             ttsCurrentIndex = 0;
+            ttsChunkQueue   = [];
+            ttsChunkIndex   = 0;
 
-            // Restaurar contenido como texto plano
-            const contentEl = document.getElementById('read-content');
-            if (contentEl && currentNoteIndex !== null && notes[currentNoteIndex]) {
-                contentEl.innerText = notes[currentNoteIndex].content;
+            const content = document.getElementById('read-content');
+            if (content && currentNoteIndex !== null && notes[currentNoteIndex]) {
+                content.innerHTML = linkify(notes[currentNoteIndex].content);
             }
-            if (contentEl) contentEl.style.paddingBottom = '50px';
-
             const bar = document.getElementById('tts-bar');
             if (bar) bar.classList.add('tts-hidden');
-
             const activateBtn = document.getElementById('btn-tts-activate');
             if (activateBtn) activateBtn.classList.remove('tts-hidden');
-
-            const voiceMenu = document.getElementById('tts-voice-menu');
-            if (voiceMenu) voiceMenu.classList.add('tts-hidden');
-
             updateTTSPlayBtn();
         }
 
+        // --- Renderizado de palabras clicables ---
         function renderTTSWords() {
-            const contentEl = document.getElementById('read-content');
-            const n = notes[currentNoteIndex];
-            if (!n || !contentEl) return;
-
+            const content = document.getElementById('read-content');
+            if (!content || currentNoteIndex === null) return;
+            const rawText = notes[currentNoteIndex]?.content || '';
+            content.innerHTML = '';
             ttsWords = [];
-            contentEl.innerHTML = '';
-
-            // Dividir por cualquier espacio en blanco preservando saltos de línea
-            const tokens = n.content.split(/([\s]+)/);
-            let wordIndex = 0;
-
+            const tokens = rawText.split(/(\s+)/);
             tokens.forEach(token => {
-                if (/^[\s]+$/.test(token)) {
-                    // Espacios y saltos de línea: preservar tal cual
-                    contentEl.appendChild(document.createTextNode(token));
-                } else if (token.length > 0) {
-                    const span = document.createElement('span');
-                    span.className = 'tts-word';
-                    span.textContent = token;
-                    const idx = wordIndex;
-                    span.addEventListener('click', () => ttsClickWord(idx));
-                    contentEl.appendChild(span);
-                    ttsWords.push({ el: span, text: token });
-                    wordIndex++;
+                if (/^\s+$/.test(token)) {
+                    content.appendChild(document.createTextNode(token));
+                    return;
                 }
-            });
+                if (!token) return;
 
+                const isLink = /^(https?:\/\/|www\.)[^\s]+$/i.test(token);
+                let el;
+
+                if (isLink) {
+                    el = document.createElement('a');
+                    el.href = token.startsWith('http') ? token : 'http://' + token;
+                    el.target = '_blank';
+                    el.className = 'tts-word note-link';
+                    el.textContent = token;
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Evita cambiar cursor del lector de voz al hacer clic en el link
+                    });
+                } else {
+                    el = document.createElement('span');
+                    el.className = 'tts-word';
+                    el.textContent = token;
+                    const wordIdx = ttsWords.length;
+                    el.addEventListener('click', () => ttsClickWord(wordIdx));
+                }
+
+                content.appendChild(el);
+                ttsWords.push({ el: el, text: token });
+            });
             buildTTSSentences();
         }
 
         function buildTTSSentences() {
             ttsSentences = [];
-            const MAX_CHARS = 200;
+            const MAX_CHARS = 180;
             let current = '';
             let startIdx = 0;
-
             ttsWords.forEach((word, i) => {
                 current += (current ? ' ' : '') + word.text;
-                const endsWithPunctuation = /[.!?;:\u2026]\s*$/.test(word.text);
                 const isLast = i === ttsWords.length - 1;
-
-                if (current.length >= MAX_CHARS || endsWithPunctuation || isLast) {
-                    ttsSentences.push({ text: current, startIndex: startIdx, endIndex: i });
-                    current = '';
-                    startIdx = i + 1;
+                const isPunct = /[.!?;:\u2026]$/.test(word.text);
+                if (isPunct || isLast || current.length >= MAX_CHARS) {
+                    ttsSentences.push({ text: current.trim(), startIndex: startIdx, endIndex: i });
+                    current   = '';
+                    startIdx  = i + 1;
                 }
             });
         }
 
         function ttsClickWord(idx) {
-            // Limpiar resaltados previos
+            ttsStop();
             ttsWords.forEach(w => w.el.classList.remove('selected', 'reading'));
-
-            // Detener lectura activa
-            tts_synth.cancel();
-            ttsPlaying = false;
-            updateTTSPlayBtn();
-
-            // Marcar la palabra tocada como punto de inicio
             if (ttsWords[idx]) {
                 ttsWords[idx].el.classList.add('selected');
                 ttsCurrentIndex = idx;
@@ -2186,117 +2237,106 @@
             for (let i = 0; i < ttsSentences.length; i++) {
                 if (wordIdx >= ttsSentences[i].startIndex && wordIdx <= ttsSentences[i].endIndex) return i;
             }
-            // Fallback: primer segmento cuyo fin sea >= wordIdx
             for (let i = 0; i < ttsSentences.length; i++) {
                 if (ttsSentences[i].endIndex >= wordIdx) return i;
             }
             return 0;
         }
 
+        // --- Reproducción ---
         function ttsTogglePlay() {
             if (ttsPlaying) {
-                tts_synth.cancel();
-                ttsPlaying = false;
-                updateTTSPlayBtn();
-                ttsWords.forEach(w => w.el.classList.remove('reading'));
+                ttsStop();
             } else {
                 ttsPlayFrom(ttsCurrentIndex);
             }
         }
 
-        function ttsPlayFrom(wordIdx) {
-            if (ttsCurrentUtterance) {
-                ttsCurrentUtterance.onend = null;
-                ttsCurrentUtterance.onerror = null;
+        function ttsStop() {
+            ttsSession++;          // invalida cualquier callback pendiente de la sesión anterior
+            ttsPlaying = false;
+            if (ttsAudio) {
+                ttsAudio.onended = null;
+                ttsAudio.onerror = null;
+                ttsAudio.pause();
+                ttsAudio.src = '';
+                ttsAudio = null;
             }
-            tts_synth.cancel();
+            ttsChunkQueue = [];
+            ttsChunkIndex = 0;
+            ttsWords.forEach(w => w.el.classList.remove('reading'));
+            updateTTSPlayBtn();
+        }
+
+        function ttsPlayFrom(wordIdx) {
+            ttsStop();
+            if (!ttsSentences.length) return;
             ttsPlaying = true;
             updateTTSPlayBtn();
 
-            ttsWords.forEach(w => w.el.classList.remove('selected', 'reading'));
-
-            // Encontrar el segmento que contiene la palabra de inicio
-            const sentenceIdx = ttsGetSentenceForWord(wordIdx);
-            const firstSentence = ttsSentences[sentenceIdx];
-
-            // El primer chunk empieza desde wordIdx (puede ser mitad de segmento)
-            const firstText = ttsWords.slice(wordIdx, firstSentence.endIndex + 1).map(w => w.text).join(' ');
-            const chunks = [];
-
+            const sentIdx   = ttsGetSentenceForWord(wordIdx);
+            const firstSent = ttsSentences[sentIdx];
+            const firstText = ttsWords.slice(wordIdx, firstSent.endIndex + 1).map(w => w.text).join(' ');
+            ttsChunkQueue   = [];
             if (firstText.trim()) {
-                chunks.push({ text: firstText, startIndex: wordIdx, endIndex: firstSentence.endIndex });
+                ttsChunkQueue.push({ text: firstText, startIndex: wordIdx, endIndex: firstSent.endIndex });
             }
-            for (let i = sentenceIdx + 1; i < ttsSentences.length; i++) {
-                chunks.push(ttsSentences[i]);
+            for (let i = sentIdx + 1; i < ttsSentences.length; i++) {
+                ttsChunkQueue.push(ttsSentences[i]);
             }
-
-            speakChunks(chunks, 0);
+            ttsChunkIndex = 0;
+            ttsPlayNextChunk(ttsSession);
         }
 
-        function speakChunks(chunks, chunkIdx) {
-            if (!ttsPlaying || chunkIdx >= chunks.length) {
+        function ttsPlayNextChunk(sessionToken) {
+            // Si la sesión cambió (Stop o clic de palabra), abortar
+            if (sessionToken !== ttsSession) return;
+            if (!ttsPlaying || ttsChunkIndex >= ttsChunkQueue.length) {
                 ttsPlaying = false;
                 updateTTSPlayBtn();
                 ttsWords.forEach(w => w.el.classList.remove('reading'));
                 return;
             }
 
-            const chunk = chunks[chunkIdx];
+            const chunk = ttsChunkQueue[ttsChunkIndex];
 
-            // Resaltar palabras del fragmento actual
-            ttsWords.forEach((w, i) => {
-                w.el.classList.remove('reading', 'selected');
-                if (i >= chunk.startIndex && i <= chunk.endIndex) {
-                    w.el.classList.add('reading');
-                }
-            });
-
-            // Hacer scroll al inicio del fragmento
+            // Marcar palabras del chunk actual
+            ttsWords.forEach(w => w.el.classList.remove('reading'));
+            for (let i = chunk.startIndex; i <= chunk.endIndex && i < ttsWords.length; i++) {
+                ttsWords[i].el.classList.add('reading');
+            }
             if (ttsWords[chunk.startIndex]) {
                 ttsWords[chunk.startIndex].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-
             ttsCurrentIndex = chunk.startIndex;
 
-            // Crear utterance (NUEVA instancia siempre — clave para Android)
-            const utterance = new SpeechSynthesisUtterance(chunk.text);
-            ttsCurrentUtterance = utterance;
-            const voice = ttsVoices[ttsSelectedVoiceIndex];
-            if (voice) {
-                utterance.voice = voice;
-                // Forzar el idioma exacto de la voz (destraba el cambio en Android)
-                utterance.lang = voice.lang;
-            }
-            utterance.rate = ttsRate;
-            utterance.pitch = ttsPitch;
+            // Crear audio con Google Translate
+            const url   = ttsGoogleURL(chunk.text);
+            const audio = new Audio(url);
+            audio.playbackRate = ttsRate;
+            ttsAudio = audio;
 
-            utterance.onend = () => {
-                if (ttsPlaying) speakChunks(chunks, chunkIdx + 1);
-            };
-            utterance.onerror = () => {
-                ttsPlaying = false;
-                updateTTSPlayBtn();
-            };
+            const capturedSession = ttsSession;  // captura el token ANTES de los callbacks asíncronos
 
-            // Retardo de 50ms (estabiliza el motor de Android)
-            setTimeout(() => {
-                if (ttsPlaying) tts_synth.speak(utterance);
-            }, 50);
+            audio.onended = () => {
+                if (capturedSession !== ttsSession) return;  // sesión vieja, ignorar
+                ttsChunkIndex++;
+                ttsPlayNextChunk(capturedSession);
+            };
+            audio.onerror = () => {
+                if (capturedSession !== ttsSession) return;
+                ttsChunkIndex++;
+                ttsPlayNextChunk(capturedSession);
+            };
+            audio.play().catch(() => {
+                if (capturedSession !== ttsSession) return;
+                ttsChunkIndex++;
+                ttsPlayNextChunk(capturedSession);
+            });
         }
 
         function updateTTSPlayBtn() {
             const btn = document.getElementById('tts-play-btn');
             if (btn) btn.textContent = ttsPlaying ? '⏸' : '▶';
         }
-
-        function toggleTTSVoiceMenu() {
-            const menu = document.getElementById('tts-voice-menu');
-            if (menu) menu.classList.toggle('tts-hidden');
-        }
-
-        // Cargar voces para Android (tardan en estar disponibles)
-        if (tts_synth.onvoiceschanged !== undefined) {
-            tts_synth.onvoiceschanged = loadTTSVoices;
-        }
-
         initApp();
