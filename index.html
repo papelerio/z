@@ -44,6 +44,40 @@
         <div id="read-summary"></div>
         <div id="read-content" style="white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; padding-bottom: 50px;"></div>
         <div id="read-char-count" class="char-count-badge"></div>
+        <button id="btn-tts-activate" class="tts-activate-btn" onclick="activateTTS()" title="Lector de voz">🔊</button>
+    </div>
+
+    <!-- TTS Bar (fija al fondo, oculta por defecto) -->
+    <div id="tts-bar" class="tts-bar tts-hidden">
+        <div class="tts-bar-inner">
+            <!-- Botón Play -->
+            <button id="tts-play-btn" class="tts-play-btn" onclick="ttsTogglePlay()">▶</button>
+
+            <!-- Sliders PICH y VLCD -->
+            <div class="tts-sliders">
+                <div class="tts-slider-row">
+                    <span class="tts-slider-label">PICH:</span>
+                    <input type="range" id="tts-pitch-slider" class="tts-slider" min="0.5" max="2" step="0.1" value="1.0" oninput="ttsPitchChange(this.value)" onchange="ttsApplySettings()">
+                    <span id="tts-pitch-val" class="tts-slider-val">1.0</span>
+                </div>
+                <div class="tts-slider-row">
+                    <span class="tts-slider-label">VLCD:</span>
+                    <input type="range" id="tts-rate-slider" class="tts-slider" min="0.1" max="4.0" step="0.1" value="1.0" oninput="ttsRateChange(this.value)" onchange="ttsApplySettings()">
+                    <span id="tts-rate-val" class="tts-slider-val">1.0</span>
+                </div>
+            </div>
+
+            <!-- Botones apilados: X arriba, ⚙️ abajo -->
+            <div class="tts-right-btns">
+                <button class="tts-close-btn" onclick="deactivateTTS()">✕</button>
+                <div style="position: relative;">
+                    <button class="tts-settings-btn" onclick="toggleTTSVoiceMenu()">⚙️</button>
+                    <div id="tts-voice-menu" class="tts-voice-menu tts-hidden">
+                        <select id="tts-voice-select" onchange="ttsSelectVoice(this.value)"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="view-edit" class="view">
