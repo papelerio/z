@@ -1221,13 +1221,22 @@
             document.getElementById('edit-char-count').innerText = `${content.length} caracteres`;
         }
 
+        function autoResizeSummary(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight || 0) + 'px';
+        }
+
         function createNewNote() {
             currentNoteIndex = null;
             document.getElementById('edit-title').value = '';
             document.getElementById('edit-content').value = '';
-            document.getElementById('edit-summary').value = '';
+            const summaryEl = document.getElementById('edit-summary');
+            summaryEl.value = '';
+            summaryEl.style.height = '';
             updateEditCharCount();
             showView('view-edit');
+            // Calcular altura después de que el DOM es visible
+            requestAnimationFrame(() => autoResizeSummary(summaryEl));
         }
 
         function openNote(id) {
@@ -1235,7 +1244,11 @@
             currentNoteIndex = notes.findIndex(n => n.id === id);
             const n = notes[currentNoteIndex];
             document.getElementById('read-title').innerText = n.title;
-            document.getElementById('read-summary').innerText = n.summary || "Sin resumen";
+            
+            const summaryEl = document.getElementById('read-summary');
+            summaryEl.innerText = n.summary || "Sin resumen";
+            summaryEl.classList.remove('expanded'); // Inicia colapsado por defecto
+            
             document.getElementById('read-content').innerText = n.content;
             const contentLen = (n.content || '').length;
             document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
@@ -1246,9 +1259,12 @@
             const n = notes[currentNoteIndex];
             document.getElementById('edit-title').value = n.title;
             document.getElementById('edit-content').value = n.content;
-            document.getElementById('edit-summary').value = n.summary;
+            const summaryEl = document.getElementById('edit-summary');
+            summaryEl.value = n.summary || '';
             updateEditCharCount();
             showView('view-edit');
+            // Calcular altura después de que el DOM es visible
+            requestAnimationFrame(() => autoResizeSummary(summaryEl));
         }
 
         function cancelEdit() {
@@ -1258,7 +1274,11 @@
                 // Volver a la vista de lectura de la nota actual
                 const n = notes[currentNoteIndex];
                 document.getElementById('read-title').innerText = n.title;
-                document.getElementById('read-summary').innerText = n.summary || "Sin resumen";
+                
+                const summaryEl = document.getElementById('read-summary');
+                summaryEl.innerText = n.summary || "Sin resumen";
+                summaryEl.classList.remove('expanded'); // Reset a colapsado
+                
                 document.getElementById('read-content').innerText = n.content;
                 const contentLen = (n.content || '').length;
                 document.getElementById('read-char-count').innerText = `${contentLen} caracteres`;
@@ -1717,13 +1737,21 @@
             const charCountBtn = document.getElementById('btn-charcount-mode');
             if (charCountBtn) charCountBtn.innerText = showCharCount ? '📊 -caracteres' : '📊 +caracteres';
             document.body.className = `size-${noteSize}`;
-            ['large', 'medium', 'compact', 'ultra-compact'].forEach(size => {
-                const el = document.getElementById(`size-${size}`);
-                if (el) {
-                    if (size === noteSize) el.classList.add('active');
-                    else el.classList.remove('active');
-                }
-            });
+
+            // Actualizar slider de tamaño
+            const sizeSlider = document.getElementById('size-slider');
+            const sizeLabelText = document.getElementById('size-label-text');
+            if (sizeSlider && sizeLabelText) {
+                let sliderVal = 3; // medium by default
+                let label = 'Mediano';
+                if (noteSize === 'ultra-compact') { sliderVal = 1; label = 'Ultra Compacto'; }
+                else if (noteSize === 'compact') { sliderVal = 2; label = 'Compacto'; }
+                else if (noteSize === 'medium') { sliderVal = 3; label = 'Mediano'; }
+                else if (noteSize === 'large') { sliderVal = 4; label = 'Grande'; }
+                
+                sizeSlider.value = sliderVal;
+                sizeLabelText.innerText = label;
+            }
         }
 
         function toggleCopyMode() {
@@ -1732,12 +1760,17 @@
             applySettings();
         }
 
-        function setNoteSize(size) {
+        function handleSizeSlider(val) {
+            let size = 'medium';
+            if (val == 1) size = 'ultra-compact';
+            else if (val == 2) size = 'compact';
+            else if (val == 3) size = 'medium';
+            else if (val == 4) size = 'large';
+
             noteSize = size;
             localStorage.setItem('zen_note_size', size);
             applySettings();
             renderNotes();
-            toggleModal('modal-size', false);
         }
 
         // --- GESTOS DE DESLIZAMIENTO (SWIPE) PARA CAMBIAR CLASES ---
@@ -1873,6 +1906,36 @@
                 touchEndY = e.changedTouches[0].screenY;
                 handleSwipe();
             }, { passive: true });
+
+            // Configurar Listeners en el resumen para expandir/colapsar distinguiendo toque vs scroll
+            const summaryEl = document.getElementById('read-summary');
+            let summaryStartX = 0;
+            let summaryStartY = 0;
+
+            summaryEl.addEventListener('touchstart', (e) => {
+                summaryStartX = e.touches[0].clientX;
+                summaryStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            summaryEl.addEventListener('touchend', (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const diffX = Math.abs(endX - summaryStartX);
+                const diffY = Math.abs(endY - summaryStartY);
+
+                // Si se desplazó menos de 10 píxeles, se interpreta como un "tap" intencional
+                if (diffX < 10 && diffY < 10) {
+                    summaryEl.classList.toggle('expanded');
+                }
+            }, { passive: true });
+
+            // Soporte para clics con mouse en PC
+            summaryEl.addEventListener('click', (e) => {
+                // Solo si es evento de ratón tradicional (los eventos táctiles ya se controlaron en touchend)
+                if (e.pointerType !== 'touch') {
+                    summaryEl.classList.toggle('expanded');
+                }
+            });
         }
 
         initApp();

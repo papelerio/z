@@ -22,14 +22,9 @@
         <div class="status-bar">
             <div class="status-left">
                 <h2 style="margin:0; font-size: 1.3rem;">ZenWriter</h2>
-                <button id="btn-copy-mode" class="btn-icon" onclick="toggleCopyMode()">📋 +título</button>
-                <button id="btn-preview-mode" class="btn-icon" onclick="togglePreviewMode()">📄 +contenido</button>
-                <button id="btn-date-mode" class="btn-icon" onclick="toggleDateMode()">📅 +fecha</button>
-                <button id="btn-class-mode" class="btn-icon" onclick="toggleClassMode()">🏷️ +clase</button>
-                <button id="btn-charcount-mode" class="btn-icon" onclick="toggleCharCountMode()">📊 +caracteres</button>
+                <button id="btn-config" class="btn-icon" onclick="toggleModal('modal-config', true)">⚙️ Config</button>
             </div>
             <div class="status-right">
-                <button id="btn-size" class="btn-icon" onclick="toggleModal('modal-size', true)">🔍 Tamaño</button>
                 <button id="btn-connect" class="offline" onclick="tryConnect()">Conectar</button>
                 <button id="btn-upload" onclick="uploadToSecureFolder()">📤 Subir</button>
                 <button id="btn-load" onclick="showLoadConfirm()">📥 Cargar</button>
@@ -46,7 +41,7 @@
         <button class="btn" onclick="showLobby()">← Volver</button>
         <button class="btn" onclick="editCurrentNote()">Editar</button>
         <h1 id="read-title" style="margin-top:30px"></h1>
-        <div id="read-summary" style="font-style: italic; color: var(--text-dim); margin-bottom: 20px;"></div>
+        <div id="read-summary"></div>
         <div id="read-content" style="white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; padding-bottom: 50px;"></div>
         <div id="read-char-count" class="char-count-badge"></div>
     </div>
@@ -63,7 +58,7 @@
             </div>
         </nav>
         <input type="text" id="edit-title" class="editor-input" placeholder="Título...">
-        <input type="text" id="edit-summary" class="editor-input" placeholder="Resumen...">
+        <textarea id="edit-summary" class="editor-input" placeholder="Resumen..." rows="1" oninput="autoResizeSummary(this)"></textarea>
         <textarea id="edit-content" class="editor-input" placeholder="Escribe tu historia..." oninput="updateEditCharCount()"></textarea>
         <div id="edit-char-count" class="char-count-badge"></div>
     </div>
@@ -173,51 +168,32 @@
         </div>
     </div>
 
-    <div id="modal-size" class="modal">
-        <div class="modal-content">
-            <h3>Tamaño de Viñetas</h3>
-            <div class="size-option" onclick="setNoteSize('large')" id="size-large">
-                <div><strong>Grande</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximo detalle</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar large"></div>
-                    <div class="preview-bar large"></div>
-                    <div class="preview-bar large"></div>
-                </div>
-            </div>
-            <div class="size-option" onclick="setNoteSize('medium')" id="size-medium">
-                <div><strong>Mediano</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Balance</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar medium"></div>
-                    <div class="preview-bar medium"></div>
-                    <div class="preview-bar medium"></div>
+    <!-- Modal de Configuraciones -->
+    <div id="modal-config" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Configuraciones</h3>
+            
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px; color: var(--text-dim);">Mostrar en tarjetas:</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button id="btn-copy-mode" class="btn" style="text-align: left;" onclick="toggleCopyMode()">📋 +título</button>
+                    <button id="btn-preview-mode" class="btn" style="text-align: left;" onclick="togglePreviewMode()">📄 +contenido</button>
+                    <button id="btn-date-mode" class="btn" style="text-align: left;" onclick="toggleDateMode()">📅 +fecha</button>
+                    <button id="btn-class-mode" class="btn" style="text-align: left;" onclick="toggleClassMode()">🏷️ +clase</button>
+                    <button id="btn-charcount-mode" class="btn" style="text-align: left; grid-column: span 2;" onclick="toggleCharCountMode()">📊 +caracteres</button>
                 </div>
             </div>
-            <div class="size-option" onclick="setNoteSize('compact')" id="size-compact">
-                <div><strong>Compacto</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Máximas notas</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar compact"></div>
-                    <div class="preview-bar compact"></div>
-                    <div class="preview-bar compact"></div>
-                </div>
-            </div>
-            <div class="size-option" onclick="setNoteSize('ultra-compact')" id="size-ultra-compact">
-                <div><strong>Ultra Compacto</strong>
-                    <div style="color: var(--text-dim); font-size: 0.8rem;">Modo miniatura</div>
-                </div>
-                <div class="size-preview">
-                    <div class="preview-bar ultra-compact"></div>
-                    <div class="preview-bar ultra-compact"></div>
-                    <div class="preview-bar ultra-compact"></div>
+
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px; color: var(--text-dim);">Tamaño de tarjetas: <span id="size-label-text" style="color:var(--text-main); font-weight:normal;">Mediano</span></h4>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">Pequeño</span>
+                    <input type="range" id="size-slider" min="1" max="4" step="1" style="flex: 1; cursor: pointer;" oninput="handleSizeSlider(this.value)">
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">Grande</span>
                 </div>
             </div>
-            <button class="btn" style="width:100%; margin-top:20px;"
-                onclick="toggleModal('modal-size', false)">Cerrar</button>
+
+            <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="toggleModal('modal-config', false)">Listo</button>
         </div>
     </div>
 
