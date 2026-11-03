@@ -1620,16 +1620,20 @@
             if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
             ytPostCommand(iframe, 'seekTo', [startTime, true]);
 
+            let fadeStarted = false;
             const play = () => {
                 if (!card._ytWantPlay) return;
-                // Arranca en volumen 0 y sube en fade
-                ytPostCommand(iframe, 'setVolume', [0]);
+                if (!fadeStarted) {
+                    // Solo en el primer intento: volumen a 0, cambio visual y fade in
+                    fadeStarted = true;
+                    ytPostCommand(iframe, 'setVolume', [0]);
+                    card.classList.remove('yt-loading');
+                    card.classList.add('yt-playing');
+                    ytUpdateStatus(card);
+                    ytFadeVolume(card, 0, 100, null);
+                }
+                // Todos los intentos mandan playVideo (reintento silencioso)
                 ytPostCommand(iframe, 'playVideo');
-                // Pasar a verde al confirmar reproducción
-                card.classList.remove('yt-loading');
-                card.classList.add('yt-playing');
-                ytUpdateStatus(card);
-                ytFadeVolume(card, 0, 100, null);
             };
             card._ytStartTimers = [
                 setTimeout(play, 150),
