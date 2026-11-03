@@ -1627,15 +1627,11 @@
             if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
             ytPostCommand(iframe, 'seekTo', [startTime, true]);
 
-            let volSet = false;
+            // Silenciar antes de cualquier intento de reproducción
+            ytPostCommand(iframe, 'setVolume', [0]);
+
             const play = () => {
                 if (!card._ytWantPlay) return;
-                if (!volSet) {
-                    // Solo en el primer intento: silenciar antes de que empiece
-                    volSet = true;
-                    ytPostCommand(iframe, 'setVolume', [0]);
-                }
-                // Todos los intentos mandan playVideo
                 ytPostCommand(iframe, 'playVideo');
             };
             card._ytStartTimers = [
@@ -1643,6 +1639,20 @@
                 setTimeout(play, 800),
                 setTimeout(play, 1600)
             ];
+
+            // Timer de respaldo: si onStateChange no llegó en 700ms desde el primer play,
+            // arrancar el fade de todas formas (cubre cuando YouTube no envía el evento)
+            if (card._ytFallbackTimer) clearTimeout(card._ytFallbackTimer);
+            card._ytFallbackTimer = setTimeout(() => {
+                card._ytFallbackTimer = null;
+                if (card._ytWantPlay && !card._ytFadingIn) {
+                    card._ytFadingIn = true;
+                    card.classList.remove('yt-loading');
+                    card.classList.add('yt-playing');
+                    ytUpdateStatus(card);
+                    ytFadeVolume(card, 0, 100, () => { card._ytFadingIn = false; });
+                }
+            }, 850); // 150ms primer play + 700ms margen de buffering
         }
 
         function ytHandlePlayerMessage(e) {
@@ -1673,6 +1683,11 @@
             // onStateChange: estado 1 = reproduciendo de verdad → arrancar fade-in
             if (data.event === 'onStateChange' && data.info === 1) {
                 if (card._ytWantPlay && !card._ytFadingIn) {
+                    // Cancelar timer de respaldo — el evento llegó antes
+                    if (card._ytFallbackTimer) {
+                        clearTimeout(card._ytFallbackTimer);
+                        card._ytFallbackTimer = null;
+                    }
                     card._ytFadingIn = true;
                     card.classList.remove('yt-loading');
                     card.classList.add('yt-playing');
@@ -1739,6 +1754,7 @@
             card._ytWantPlay = true;
             card._ytStarted = false;
             card._ytFadingIn = false;
+            if (card._ytFallbackTimer) { clearTimeout(card._ytFallbackTimer); card._ytFallbackTimer = null; }
             card.classList.remove('yt-error');
             card.dataset.ytError = '';
 
@@ -1767,6 +1783,7 @@
             card._ytWantPlay = false;
             card._ytStarted = false;
             card._ytFadingIn = false;
+            if (card._ytFallbackTimer) { clearTimeout(card._ytFallbackTimer); card._ytFallbackTimer = null; }
             card.classList.remove('yt-playing', 'yt-loading');
             if (activeYouTubeCard === card) activeYouTubeCard = null;
             ytUpdateStatus(card);
