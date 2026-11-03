@@ -32,6 +32,7 @@
         let showCharCount = localStorage.getItem('zen_show_charcount') === 'true';
         let noteSize = localStorage.getItem('zen_note_size') || 'medium';
         let ytCardWidth = parseInt(localStorage.getItem('zen_yt_card_width'), 10) || 380;
+        ytCardWidth = Math.max(240, Math.min(700, ytCardWidth));
 
         let currentMasterClass = null;
 
@@ -1382,17 +1383,15 @@
 
             const overlay = ytCreateElement('div', 'yt-play-overlay', '▶');
             const status = ytCreateElement('div', 'yt-status');
-            thumb.append(img, overlay, status);
+            thumb.append(img, overlay);
 
             const caption = ytCreateElement('div', 'yt-caption');
-            const captionTop = ytCreateElement('div', 'yt-caption-top');
-            captionTop.appendChild(ytCreateElement('span', 'yt-brand', '▶ YouTube'));
-            captionTop.appendChild(ytCreateElement('span', 'yt-url', urlText || href));
-            caption.appendChild(captionTop);
-            caption.appendChild(ytCreateElement('span', 'yt-hint yt-hint-pc', 'Pasa el cursor para escuchar · Clic para abrir'));
-            caption.appendChild(ytCreateElement('span', 'yt-hint yt-hint-touch', 'Toca para copiar · Mantén para escuchar · Toca de nuevo para abrir'));
+            caption.appendChild(ytCreateElement('span', 'yt-brand', '▶ YouTube'));
+            const url = ytCreateElement('span', 'yt-url', urlText || href);
+            url.title = href;
+            caption.appendChild(url);
 
-            card.append(thumb, caption);
+            card.append(thumb, caption, status);
             bindYouTubeCardEvents(card);
             return card;
         }
@@ -1521,11 +1520,109 @@
             enhanceYouTubeLinks(content, false);
         }
 
-        function ytPostCommand(iframe, func, args = '') {
+        function ytPostPlayerMessage(iframe, payload) {
             if (!iframe || !iframe.contentWindow) return;
             try {
-                iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args }), '*');
+                iframe.contentWindow.postMessage(JSON.stringify(payload), '*');
             } catch (e) {}
+        }
+
+        function ytPostCommand(iframe, func, args = '') {
+            ytPostPlayerMessage(iframe, { event: 'command', func: func, args: args });
+        }
+
+        function ytStartHandshake(card) {
+            if (!card || card._ytListenTimer) return;
+            const send = () => {
+                const iframe = card.querySelector('iframe');
+                if (!iframe || !iframe.contentWindow) return;
+                ytPostPlayerMessage(iframe, { event: 'listening', id: 1, channel: 'widget' });
+                ytPostPlayerMessage(iframe, {
+                    event: 'command',
+                    func: 'addEventListener',
+                    args: ['onReady'],
+                    id: 1,
+                    channel: 'widget'
+                });
+            };
+            send();
+            card._ytListenTimer = setInterval(send, 250);
+            card._ytListenTimeout = setTimeout(() => ytStopHandshake(card), 10000);
+        }
+
+        function ytStopHandshake(card) {
+            if (!card) return;
+            if (card._ytListenTimer) {
+                clearInterval(card._ytListenTimer);
+                card._ytListenTimer = null;
+            }
+            if (card._ytListenTimeout) {
+                clearTimeout(card._ytListenTimeout);
+                card._ytListenTimeout = null;
+            }
+        }
+
+        function ytTryStartPlayback(card) {
+            if (!card || !card._ytWantPlay || card._ytStarted) return;
+            const duration = parseFloat(card.dataset.ytDuration || '0');
+            if (!Number.isFinite(duration) || duration <= 0) return;
+            const iframe = card.querySelector('iframe');
+            if (!iframe) return;
+
+            card._ytStarted = true;
+            const startTime = duration < 45 ? 0 : 30;
+            card._ytStartTime = startTime;
+
+            if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
+            ytPostCommand(iframe, 'seekTo', [startTime, true]);
+
+            const play = () => {
+                if (!card._ytWantPlay) return;
+                ytPostCommand(iframe, 'playVideo');
+            };
+            card._ytStartTimers = [
+                setTimeout(play, 150),
+                setTimeout(play, 800),
+                setTimeout(play, 1600)
+            ];
+        }
+
+        function ytHandlePlayerMessage(e) {
+            if (!e || !e.data) return;
+            let data = e.data;
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch (err) { return; }
+            }
+            if (!data || !data.event) return;
+
+            let card = null;
+            document.querySelectorAll('#read-content .yt-card iframe').forEach(iframe => {
+                if (iframe.contentWindow === e.source) card = iframe.closest('.yt-card');
+            });
+            if (!card) return;
+
+            const info = data.info || {};
+            if (data.event === 'initialDelivery' || data.event === 'onReady' || data.event === 'infoDelivery') {
+                if (data.event === 'onReady') card.dataset.ytPlayerReady = '1';
+                const duration = Number(info.duration);
+                if (Number.isFinite(duration) && duration > 0) {
+                    card.dataset.ytDuration = String(duration);
+                    ytStopHandshake(card);
+                    ytTryStartPlayback(card);
+                }
+            }
+
+            if (data.event === 'onError') {
+                if (!card._ytWantPlay) return;
+                const code = typeof data.info === 'number' ? data.info : (data.info && data.info.errorCode) || null;
+                card._ytWantPlay = false;
+                card._ytStarted = false;
+                ytStopHandshake(card);
+                card.classList.remove('yt-playing');
+                card.classList.add('yt-error');
+                card.dataset.ytError = code ? String(code) : '1';
+                ytUpdateStatus(card);
+            }
         }
 
         function ytEnsureIframe(card) {
@@ -1535,17 +1632,29 @@
             const thumb = card.querySelector('.yt-thumb');
             if (!videoId || !thumb) return null;
 
+            let src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=0&controls=0&disablekb=1&modestbranding=1&playsinline=1&rel=0`;
+            if (location.protocol === 'http:' || location.protocol === 'https:') {
+                src += `&origin=${encodeURIComponent(location.origin)}`;
+            }
+
             const iframe = document.createElement('iframe');
             iframe.className = 'yt-iframe';
-            iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&disablekb=1&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=${videoId}`;
+            iframe.src = src;
             iframe.allow = 'autoplay; encrypted-media';
             iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('referrerpolicy', 'strict-origin');
             iframe.setAttribute('aria-hidden', 'true');
             iframe.tabIndex = -1;
             iframe.dataset.loaded = '0';
             iframe.addEventListener('load', () => {
                 iframe.dataset.loaded = '1';
-                if (card.classList.contains('yt-playing')) ytPostCommand(iframe, 'playVideo');
+                if (card._ytWantPlay) {
+                    if (card.dataset.ytPlayerReady === '1' && card.dataset.ytDuration) {
+                        ytTryStartPlayback(card);
+                    } else {
+                        ytStartHandshake(card);
+                    }
+                }
             });
             thumb.appendChild(iframe);
             return iframe;
@@ -1555,35 +1664,45 @@
             if (!card) return;
             if (activeYouTubeCard && activeYouTubeCard !== card) ytStopPreview(activeYouTubeCard);
             activeYouTubeCard = card;
+
+            if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
+            card._ytStartTimers = [];
+            card._ytWantPlay = true;
+            card._ytStarted = false;
+            card.classList.remove('yt-error');
+            card.dataset.ytError = '';
             card.classList.add('yt-playing');
             ytUpdateStatus(card);
 
             const iframe = ytEnsureIframe(card);
             if (!iframe) return;
 
-            if (card._ytPlayTimers) card._ytPlayTimers.forEach(clearTimeout);
-            const play = () => ytPostCommand(iframe, 'playVideo');
-            play();
-            card._ytPlayTimers = [
-                setTimeout(play, 250),
-                setTimeout(play, 800),
-                setTimeout(play, 1600)
-            ];
+            if (card.dataset.ytPlayerReady === '1' && card.dataset.ytDuration) {
+                ytTryStartPlayback(card);
+            } else {
+                ytStartHandshake(card);
+            }
         }
 
         function ytStopPreview(card) {
             if (!card) return;
-            if (card._ytPlayTimers) {
-                card._ytPlayTimers.forEach(clearTimeout);
-                card._ytPlayTimers = [];
+            if (card._ytStartTimers) {
+                card._ytStartTimers.forEach(clearTimeout);
+                card._ytStartTimers = [];
             }
+            ytStopHandshake(card);
+            card._ytWantPlay = false;
+            card._ytStarted = false;
+
             const iframe = card.querySelector('iframe');
             if (iframe) {
                 if (iframe.dataset.loaded === '1') {
                     ytPostCommand(iframe, 'pauseVideo');
-                    ytPostCommand(iframe, 'seekTo', [0, true]);
+                    ytPostCommand(iframe, 'seekTo', [card._ytStartTime || 0, true]);
                 } else {
                     iframe.remove();
+                    card.dataset.ytPlayerReady = '0';
+                    card.dataset.ytDuration = '';
                 }
             }
             card.classList.remove('yt-playing');
@@ -1603,6 +1722,8 @@
             let text = '';
             if (card.classList.contains('yt-copied')) {
                 text = '✓ Enlace copiado';
+            } else if (card.classList.contains('yt-error')) {
+                text = '⚠️ Vista previa no disponible';
             } else if (card.classList.contains('yt-playing')) {
                 text = '🔊 Reproduciendo muestra…';
             } else if (card.classList.contains('yt-focused')) {
@@ -2225,7 +2346,7 @@
         function handleYtSizeSlider(val) {
             let width = parseInt(val, 10);
             if (!Number.isFinite(width)) width = 380;
-            width = Math.max(160, Math.min(700, width));
+            width = Math.max(240, Math.min(700, width));
             ytCardWidth = width;
             localStorage.setItem('zen_yt_card_width', width);
             applySettings();
@@ -2487,6 +2608,8 @@
                     clearYouTubeFocus();
                 }
             }, true);
+
+            window.addEventListener('message', ytHandlePlayerMessage);
         }
 
         // =============================================

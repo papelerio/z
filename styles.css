@@ -1320,13 +1320,14 @@
 
         /* Miniaturas de YouTube en el visualizador */
         .yt-card {
-            display: block;
+            display: flex;
+            align-items: center;
             width: 100%;
             max-width: var(--yt-card-width, 380px);
-            margin: 12px 0;
+            margin: 8px 0;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             position: relative;
@@ -1350,9 +1351,13 @@
             box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.35), 0 8px 24px rgba(0, 0, 0, 0.45);
         }
 
+        .yt-card.yt-error {
+            border-color: rgba(241, 196, 15, 0.7);
+        }
+
         .yt-thumb {
+            flex: 0 0 clamp(96px, 40%, 176px);
             position: relative;
-            width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
             overflow: hidden;
@@ -1393,8 +1398,10 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 4;
-            width: 54px;
-            height: 54px;
+            width: clamp(32px, 36%, 54px);
+            height: auto;
+            aspect-ratio: 1;
+            box-sizing: border-box;
             padding-left: 4px;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.9);
@@ -1403,7 +1410,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.35rem;
+            font-size: 0.95rem;
             line-height: 1;
             pointer-events: none;
             transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
@@ -1421,15 +1428,15 @@
 
         .yt-status {
             position: absolute;
-            left: 10px;
-            bottom: 10px;
+            right: 8px;
+            bottom: 6px;
             z-index: 5;
-            max-width: calc(100% - 20px);
-            padding: 4px 10px;
+            max-width: calc(100% - 16px);
+            padding: 3px 9px;
             border-radius: 999px;
             background: rgba(0, 0, 0, 0.78);
             color: #fff;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1443,56 +1450,35 @@
         }
 
         .yt-caption {
+            flex: 1 1 auto;
+            min-width: 0;
             display: flex;
             flex-direction: column;
+            justify-content: center;
             gap: 3px;
-            padding: 9px 12px 10px;
-        }
-
-        .yt-caption-top {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 0;
+            padding: 8px 12px;
         }
 
         .yt-brand {
-            flex: 0 0 auto;
             color: #ff4d4d;
-            font-size: 0.76rem;
+            font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.02em;
+            line-height: 1.1;
         }
 
         .yt-url {
-            flex: 1 1 auto;
-            min-width: 0;
-            color: var(--text-dim);
-            font-size: 0.74rem;
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .yt-hint {
+            overflow-wrap: anywhere;
             color: var(--text-dim);
-            font-size: 0.66rem;
-            line-height: 1.35;
-        }
-
-        .yt-hint-touch {
-            display: none;
+            font-size: 0.72rem;
+            line-height: 1.3;
         }
 
         @media (hover: none), (pointer: coarse) {
-            .yt-hint-pc {
-                display: none;
-            }
-
-            .yt-hint-touch {
-                display: inline;
-            }
-
             .yt-card:hover {
                 transform: none;
             }
