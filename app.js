@@ -1544,6 +1544,13 @@
                     id: 1,
                     channel: 'widget'
                 });
+                ytPostPlayerMessage(iframe, {
+                    event: 'command',
+                    func: 'addEventListener',
+                    args: ['onStateChange'],
+                    id: 1,
+                    channel: 'widget'
+                });
             };
             send();
             card._ytListenTimer = setInterval(send, 250);
@@ -1620,19 +1627,15 @@
             if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
             ytPostCommand(iframe, 'seekTo', [startTime, true]);
 
-            let fadeStarted = false;
+            let volSet = false;
             const play = () => {
                 if (!card._ytWantPlay) return;
-                if (!fadeStarted) {
-                    // Solo en el primer intento: volumen a 0, cambio visual y fade in
-                    fadeStarted = true;
+                if (!volSet) {
+                    // Solo en el primer intento: silenciar antes de que empiece
+                    volSet = true;
                     ytPostCommand(iframe, 'setVolume', [0]);
-                    card.classList.remove('yt-loading');
-                    card.classList.add('yt-playing');
-                    ytUpdateStatus(card);
-                    ytFadeVolume(card, 0, 100, null);
                 }
-                // Todos los intentos mandan playVideo (reintento silencioso)
+                // Todos los intentos mandan playVideo
                 ytPostCommand(iframe, 'playVideo');
             };
             card._ytStartTimers = [
@@ -1664,6 +1667,17 @@
                     card.dataset.ytDuration = String(duration);
                     ytStopHandshake(card);
                     ytTryStartPlayback(card);
+                }
+            }
+
+            // onStateChange: estado 1 = reproduciendo de verdad → arrancar fade-in
+            if (data.event === 'onStateChange' && data.info === 1) {
+                if (card._ytWantPlay && !card._ytFadingIn) {
+                    card._ytFadingIn = true;
+                    card.classList.remove('yt-loading');
+                    card.classList.add('yt-playing');
+                    ytUpdateStatus(card);
+                    ytFadeVolume(card, 0, 100, () => { card._ytFadingIn = false; });
                 }
             }
 
@@ -1724,18 +1738,13 @@
             card._ytStartTimers = [];
             card._ytWantPlay = true;
             card._ytStarted = false;
+            card._ytFadingIn = false;
             card.classList.remove('yt-error');
             card.dataset.ytError = '';
 
-            // Si ya tenemos duración (player listo), arrancamos directo → verde
-            // Si aún no, mostramos amarillo (cargando) hasta que llegue la duración
-            if (card.dataset.ytPlayerReady === '1' && card.dataset.ytDuration) {
-                card.classList.remove('yt-loading');
-                card.classList.add('yt-playing');
-            } else {
-                card.classList.remove('yt-playing');
-                card.classList.add('yt-loading');
-            }
+            // Siempre arranca en amarillo (cargando); el verde llega con onStateChange
+            card.classList.remove('yt-playing');
+            card.classList.add('yt-loading');
             ytUpdateStatus(card);
 
             const iframe = ytEnsureIframe(card);
@@ -1757,6 +1766,7 @@
             ytStopHandshake(card);
             card._ytWantPlay = false;
             card._ytStarted = false;
+            card._ytFadingIn = false;
             card.classList.remove('yt-playing', 'yt-loading');
             if (activeYouTubeCard === card) activeYouTubeCard = null;
             ytUpdateStatus(card);
