@@ -1547,7 +1547,19 @@
             };
             send();
             card._ytListenTimer = setInterval(send, 250);
-            card._ytListenTimeout = setTimeout(() => ytStopHandshake(card), 10000);
+            card._ytListenTimeout = setTimeout(() => {
+                ytStopHandshake(card);
+                // Si aún queremos reproducir pero nunca recibimos duración,
+                // el video no permite embedding → marcar como error
+                if (card._ytWantPlay && !card.dataset.ytDuration) {
+                    card._ytWantPlay = false;
+                    card._ytStarted = false;
+                    card.classList.remove('yt-playing', 'yt-loading');
+                    card.classList.add('yt-error');
+                    card.dataset.ytError = 'embed';
+                    ytUpdateStatus(card);
+                }
+            }, 10000);
         }
 
         function ytStopHandshake(card) {
@@ -1560,6 +1572,38 @@
                 clearTimeout(card._ytListenTimeout);
                 card._ytListenTimeout = null;
             }
+        }
+
+        // --- Fade de volumen ---
+        const YT_FADE_MS = 400;       // duración del fade en ms
+        const YT_FADE_STEPS = 20;     // pasos de animación
+
+        function ytFadeVolume(card, fromVol, toVol, onDone) {
+            if (card._ytFadeTimer) {
+                clearInterval(card._ytFadeTimer);
+                card._ytFadeTimer = null;
+            }
+            const iframe = card.querySelector('iframe');
+            if (!iframe || iframe.dataset.loaded !== '1') {
+                if (onDone) onDone();
+                return;
+            }
+            const stepMs = YT_FADE_MS / YT_FADE_STEPS;
+            const stepVol = (toVol - fromVol) / YT_FADE_STEPS;
+            let step = 0;
+            let currentVol = fromVol;
+            ytPostCommand(iframe, 'setVolume', [Math.round(currentVol)]);
+            card._ytFadeTimer = setInterval(() => {
+                step++;
+                currentVol = fromVol + stepVol * step;
+                const clamped = Math.max(0, Math.min(100, Math.round(currentVol)));
+                ytPostCommand(iframe, 'setVolume', [clamped]);
+                if (step >= YT_FADE_STEPS) {
+                    clearInterval(card._ytFadeTimer);
+                    card._ytFadeTimer = null;
+                    if (onDone) onDone();
+                }
+            }, stepMs);
         }
 
         function ytTryStartPlayback(card) {
@@ -1578,7 +1622,14 @@
 
             const play = () => {
                 if (!card._ytWantPlay) return;
+                // Arranca en volumen 0 y sube en fade
+                ytPostCommand(iframe, 'setVolume', [0]);
                 ytPostCommand(iframe, 'playVideo');
+                // Pasar a verde al confirmar reproducción
+                card.classList.remove('yt-loading');
+                card.classList.add('yt-playing');
+                ytUpdateStatus(card);
+                ytFadeVolume(card, 0, 100, null);
             };
             card._ytStartTimers = [
                 setTimeout(play, 150),
@@ -1618,7 +1669,7 @@
                 card._ytWantPlay = false;
                 card._ytStarted = false;
                 ytStopHandshake(card);
-                card.classList.remove('yt-playing');
+                card.classList.remove('yt-playing', 'yt-loading');
                 card.classList.add('yt-error');
                 card.dataset.ytError = code ? String(code) : '1';
                 ytUpdateStatus(card);
@@ -1671,7 +1722,16 @@
             card._ytStarted = false;
             card.classList.remove('yt-error');
             card.dataset.ytError = '';
-            card.classList.add('yt-playing');
+
+            // Si ya tenemos duración (player listo), arrancamos directo → verde
+            // Si aún no, mostramos amarillo (cargando) hasta que llegue la duración
+            if (card.dataset.ytPlayerReady === '1' && card.dataset.ytDuration) {
+                card.classList.remove('yt-loading');
+                card.classList.add('yt-playing');
+            } else {
+                card.classList.remove('yt-playing');
+                card.classList.add('yt-loading');
+            }
             ytUpdateStatus(card);
 
             const iframe = ytEnsureIframe(card);
@@ -1693,21 +1753,25 @@
             ytStopHandshake(card);
             card._ytWantPlay = false;
             card._ytStarted = false;
-
-            const iframe = card.querySelector('iframe');
-            if (iframe) {
-                if (iframe.dataset.loaded === '1') {
-                    ytPostCommand(iframe, 'pauseVideo');
-                    ytPostCommand(iframe, 'seekTo', [card._ytStartTime || 0, true]);
-                } else {
-                    iframe.remove();
-                    card.dataset.ytPlayerReady = '0';
-                    card.dataset.ytDuration = '';
-                }
-            }
-            card.classList.remove('yt-playing');
+            card.classList.remove('yt-playing', 'yt-loading');
             if (activeYouTubeCard === card) activeYouTubeCard = null;
             ytUpdateStatus(card);
+
+            const iframe = card.querySelector('iframe');
+            if (!iframe) return;
+
+            if (iframe.dataset.loaded === '1') {
+                // Fade out de volumen, luego pausar
+                ytFadeVolume(card, 100, 0, () => {
+                    ytPostCommand(iframe, 'pauseVideo');
+                    ytPostCommand(iframe, 'seekTo', [card._ytStartTime || 0, true]);
+                    ytPostCommand(iframe, 'setVolume', [100]); // resetear para próxima vez
+                });
+            } else {
+                iframe.remove();
+                card.dataset.ytPlayerReady = '0';
+                card.dataset.ytDuration = '';
+            }
         }
 
         function stopAllYouTubePreviews() {
@@ -1723,9 +1787,13 @@
             if (card.classList.contains('yt-copied')) {
                 text = '✓ Enlace copiado';
             } else if (card.classList.contains('yt-error')) {
-                text = '⚠️ Vista previa no disponible';
+                text = card.dataset.ytError === 'embed'
+                    ? '🔒 Este video no permite previsualización'
+                    : '⚠️ Vista previa no disponible';
             } else if (card.classList.contains('yt-playing')) {
-                text = '🔊 Reproduciendo muestra…';
+                text = '🟢 Reproduciendo muestra…';
+            } else if (card.classList.contains('yt-loading')) {
+                text = '🟡 Cargando audio…';
             } else if (card.classList.contains('yt-focused')) {
                 text = '🎯 Enfocado · toca para abrir';
             }
