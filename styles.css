@@ -1317,3 +1317,183 @@
             text-shadow: 0 0 8px rgba(46, 204, 113, 0.6);
             transition: color 0.1s ease;
         }
+
+        /* Miniaturas de YouTube en el visualizador */
+        .yt-card {
+            display: block;
+            width: 100%;
+            max-width: var(--yt-card-width, 380px);
+            margin: 12px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            white-space: normal;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .yt-card:hover {
+            border-color: #ff4d4d;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .yt-card.yt-focused {
+            border-color: #ff4d4d;
+            box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.35), 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        .yt-thumb {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .yt-thumb-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .yt-iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .yt-thumb::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent 45%);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .yt-play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 4;
+            width: 54px;
+            height: 54px;
+            padding-left: 4px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            line-height: 1;
+            pointer-events: none;
+            transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .yt-card:hover .yt-play-overlay,
+        .yt-card.yt-focused .yt-play-overlay {
+            background: #ff0033;
+            transform: translate(-50%, -50%) scale(1.08);
+        }
+
+        .yt-card.yt-playing .yt-play-overlay {
+            opacity: 0;
+        }
+
+        .yt-status {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            z-index: 5;
+            max-width: calc(100% - 20px);
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.78);
+            color: #fff;
+            font-size: 0.72rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .yt-status.visible {
+            opacity: 1;
+        }
+
+        .yt-caption {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 9px 12px 10px;
+        }
+
+        .yt-caption-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .yt-brand {
+            flex: 0 0 auto;
+            color: #ff4d4d;
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .yt-url {
+            flex: 1 1 auto;
+            min-width: 0;
+            color: var(--text-dim);
+            font-size: 0.74rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .yt-hint {
+            color: var(--text-dim);
+            font-size: 0.66rem;
+            line-height: 1.35;
+        }
+
+        .yt-hint-touch {
+            display: none;
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            .yt-hint-pc {
+                display: none;
+            }
+
+            .yt-hint-touch {
+                display: inline;
+            }
+
+            .yt-card:hover {
+                transform: none;
+            }
+        }

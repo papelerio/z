@@ -216,6 +216,15 @@
                 </div>
             </div>
 
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px; color: var(--text-dim);">Tamaño de miniaturas YouTube: <span id="yt-size-label" style="color:var(--text-main); font-weight:normal;">380 px</span></h4>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">Pequeña</span>
+                    <input type="range" id="yt-size-slider" min="160" max="700" step="20" value="380" style="flex: 1; cursor: pointer;" oninput="handleYtSizeSlider(this.value)">
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">Grande</span>
+                </div>
+            </div>
+
             <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="toggleModal('modal-config', false)">Listo</button>
         </div>
     </div>
