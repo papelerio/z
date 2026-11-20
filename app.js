@@ -1324,6 +1324,10 @@
         const YT_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
         let focusedYouTubeCard = null;
         let activeYouTubeCard = null;
+        let activeMusicCard = null;
+        let musicIsPlaying = false;
+        let musicIsSeeking = false;
+        let musicPollTimer = null;
 
         function getYouTubeId(url) {
             if (!url) return null;
@@ -1362,13 +1366,75 @@
             return el;
         }
 
+        // --- Caché de títulos y formateador de tiempo ---
+        const ytTitleCache = {};
+
+        function ytFormatTime(seconds) {
+            if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+            const s = Math.floor(seconds % 60);
+            const m = Math.floor((seconds / 60) % 60);
+            const h = Math.floor(seconds / 3600);
+            const ss = s < 10 ? '0' + s : String(s);
+            if (h > 0) {
+                const mm = m < 10 ? '0' + m : String(m);
+                return `${h}:${mm}:${ss}`;
+            }
+            return `${m}:${ss}`;
+        }
+
+        function ytFetchTitle(videoId, card) {
+            if (!videoId || !card) return;
+            if (ytTitleCache[videoId]) {
+                ytApplyTitle(card, ytTitleCache[videoId]);
+                return;
+            }
+            // Intentar primero con noembed (CORS abierto)
+            fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.title) {
+                        ytTitleCache[videoId] = data.title;
+                        ytApplyTitle(card, data.title);
+                    }
+                })
+                .catch(() => {
+                    // Respaldo con endpoint oficial de YouTube
+                    fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.title) {
+                                ytTitleCache[videoId] = data.title;
+                                ytApplyTitle(card, data.title);
+                            }
+                        })
+                        .catch(() => {});
+                });
+        }
+
+        function ytApplyTitle(card, title) {
+            if (!card || !title) return;
+            card.dataset.videoTitle = title;
+            const urlEl = card.querySelector('.yt-url');
+            if (urlEl) {
+                urlEl.textContent = title;
+                urlEl.title = title;
+            }
+            if (activeMusicCard === card) {
+                const barTitle = document.getElementById('music-bar-title');
+                if (barTitle) {
+                    barTitle.textContent = title;
+                    barTitle.title = title;
+                }
+            }
+        }
+
         function buildYouTubeCard(videoId, href, urlText) {
             const card = ytCreateElement('div', 'yt-card');
             card.dataset.videoId = videoId;
             card.dataset.href = href;
             card.tabIndex = 0;
-            card.setAttribute('role', 'link');
-            card.setAttribute('aria-label', 'Miniatura de YouTube: ' + (urlText || href));
+            card.setAttribute('role', 'region');
+            card.setAttribute('aria-label', 'Tarjeta de YouTube: ' + (urlText || href));
 
             const thumb = ytCreateElement('div', 'yt-thumb');
 
@@ -1381,18 +1447,33 @@
                 img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
             }, { once: true });
 
-            const overlay = ytCreateElement('div', 'yt-play-overlay', '▶');
-            const status = ytCreateElement('div', 'yt-status');
-            thumb.append(img, overlay);
+            // Insignia de duración (aparece al pasar el cursor)
+            const durationBadge = ytCreateElement('span', 'yt-duration-badge');
+            if (card.dataset.ytDuration) {
+                durationBadge.textContent = ytFormatTime(parseFloat(card.dataset.ytDuration));
+                durationBadge.classList.add('visible');
+            }
 
+            // Botón play interactivo
+            const overlay = ytCreateElement('button', 'yt-play-overlay', '▶');
+            overlay.type = 'button';
+            overlay.title = 'Reproducir música';
+            overlay.setAttribute('aria-label', 'Reproducir música');
+
+            const status = ytCreateElement('div', 'yt-status');
+            thumb.append(img, durationBadge, overlay, status);
+
+            // Bloque de enlace para abrir en YouTube
             const caption = ytCreateElement('div', 'yt-caption');
+            caption.title = 'Abrir en YouTube: ' + (urlText || href);
             caption.appendChild(ytCreateElement('span', 'yt-brand', '▶ YouTube'));
             const url = ytCreateElement('span', 'yt-url', urlText || href);
             url.title = href;
             caption.appendChild(url);
 
-            card.append(thumb, caption, status);
+            card.append(thumb, caption);
             bindYouTubeCardEvents(card);
+            ytFetchTitle(videoId, card);
             return card;
         }
 
@@ -1404,13 +1485,37 @@
             let longPressed = false;
             let lastTouchTime = 0;
 
+            const overlay = card.querySelector('.yt-play-overlay');
+            const caption = card.querySelector('.yt-caption');
+
+            // Clic en el botón play amarillo: reproduce música en la barra inferior
+            if (overlay) {
+                overlay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    musicStartFromCard(card);
+                });
+            }
+
+            // Clic en el enlace / título: abre YouTube en nueva pestaña
+            if (caption) {
+                caption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    ytOpenLink(card);
+                });
+            }
+
             card.addEventListener('mouseenter', () => {
                 if (isCoarsePointer()) return;
+                if (card._ytMusicMode) return; // Si ya está sonando en la barra, no interrumpir
+                if (activeMusicCard) return;   // Si hay otra canción sonando en la barra, no perturbar
                 ytPlayPreview(card);
             });
 
             card.addEventListener('mouseleave', () => {
                 if (isCoarsePointer()) return;
+                if (card._ytMusicMode) return; // En modo música sigue sonando
                 ytStopPreview(card);
             });
 
@@ -1427,7 +1532,9 @@
                     if (!touchActive) return;
                     longPressed = true;
                     ytFocusCard(card);
-                    ytPlayPreview(card);
+                    if (!card._ytMusicMode && !activeMusicCard) {
+                        ytPlayPreview(card);
+                    }
                     if (navigator.vibrate) {
                         try { navigator.vibrate(20); } catch (err) {}
                     }
@@ -1461,12 +1568,17 @@
                     return;
                 }
                 if (moved) return;
-                e.preventDefault();
-                if (card.classList.contains('yt-focused')) {
+
+                // Si tocó el caption -> abrir link
+                if (e.target && e.target.closest('.yt-caption')) {
+                    e.preventDefault();
                     ytOpenLink(card);
-                } else {
-                    ytCopyLink(card);
+                    return;
                 }
+
+                // Si tocó el botón play o miniatura -> reproducir música
+                e.preventDefault();
+                musicStartFromCard(card);
             };
 
             card.addEventListener('touchend', (e) => finishTouch(e, false), { passive: false });
@@ -1474,24 +1586,30 @@
 
             card.addEventListener('click', (e) => {
                 if (e.pointerType === 'touch' || Date.now() - lastTouchTime < 700) {
-                    e.preventDefault();
                     return;
                 }
+                // Si hizo clic en el caption ya fue atendido
+                if (e.target && e.target.closest('.yt-caption')) return;
+                // Si hizo clic en el overlay ya fue atendido
+                if (e.target && e.target.closest('.yt-play-overlay')) return;
+                // Clic en cualquier otra parte de la miniatura -> inicia música
                 e.preventDefault();
-                ytOpenLink(card);
+                musicStartFromCard(card);
             });
 
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    ytOpenLink(card);
+                    musicStartFromCard(card);
                 }
             });
 
             card.addEventListener('contextmenu', (e) => e.preventDefault());
 
             card.addEventListener('blur', () => {
-                if (!card.classList.contains('yt-focused')) ytStopPreview(card);
+                if (!card.classList.contains('yt-focused') && !card._ytMusicMode) {
+                    ytStopPreview(card);
+                }
             });
         }
 
@@ -1675,29 +1793,87 @@
                 const duration = Number(info.duration);
                 if (Number.isFinite(duration) && duration > 0) {
                     card.dataset.ytDuration = String(duration);
+                    // Actualizar insignia de duración sobre la miniatura
+                    const badge = card.querySelector('.yt-duration-badge');
+                    if (badge) {
+                        badge.textContent = ytFormatTime(duration);
+                        badge.classList.add('visible');
+                    }
+                    // Si esta tarjeta está activa en la barra de música, actualizar duración
+                    if (activeMusicCard === card) {
+                        const totalEl = document.getElementById('music-total-time');
+                        if (totalEl) totalEl.textContent = ytFormatTime(duration);
+                        const seekSlider = document.getElementById('music-seek-slider');
+                        if (seekSlider) seekSlider.max = String(Math.floor(duration));
+                    }
                     ytStopHandshake(card);
-                    ytTryStartPlayback(card);
+                    if (!card._ytMusicMode) {
+                        ytTryStartPlayback(card);
+                    }
+                }
+
+                // Actualizar progreso de la barra de música
+                if (info.currentTime !== undefined && activeMusicCard === card && !musicIsSeeking) {
+                    const cur = Number(info.currentTime);
+                    if (Number.isFinite(cur)) {
+                        const curEl = document.getElementById('music-current-time');
+                        if (curEl) curEl.textContent = ytFormatTime(cur);
+                        const seekSlider = document.getElementById('music-seek-slider');
+                        if (seekSlider) seekSlider.value = String(Math.floor(cur));
+                        const seekVal = document.getElementById('music-seek-val');
+                        if (seekVal) seekVal.textContent = ytFormatTime(cur);
+                    }
                 }
             }
 
-            // onStateChange: estado 1 = reproduciendo de verdad → arrancar fade-in
-            if (data.event === 'onStateChange' && data.info === 1) {
-                if (card._ytWantPlay && !card._ytFadingIn) {
-                    // Cancelar timer de respaldo — el evento llegó antes
-                    if (card._ytFallbackTimer) {
-                        clearTimeout(card._ytFallbackTimer);
-                        card._ytFallbackTimer = null;
+            // onStateChange
+            if (data.event === 'onStateChange') {
+                if (activeMusicCard === card) {
+                    if (data.info === 1) { // Reproduciendo
+                        musicIsPlaying = true;
+                        const playBtn = document.getElementById('music-play-btn');
+                        if (playBtn) playBtn.textContent = '⏸';
+                        const ov = card.querySelector('.yt-play-overlay');
+                        if (ov) ov.textContent = '⏸';
+                        card.classList.remove('yt-loading');
+                        card.classList.add('yt-playing', 'yt-music-active');
+                    } else if (data.info === 2) { // Pausado
+                        musicIsPlaying = false;
+                        const playBtn = document.getElementById('music-play-btn');
+                        if (playBtn) playBtn.textContent = '▶';
+                        const ov = card.querySelector('.yt-play-overlay');
+                        if (ov) ov.textContent = '▶';
+                        card.classList.remove('yt-playing');
+                    } else if (data.info === 0) { // Finalizado
+                        musicIsPlaying = false;
+                        const playBtn = document.getElementById('music-play-btn');
+                        if (playBtn) playBtn.textContent = '▶';
+                        const ov = card.querySelector('.yt-play-overlay');
+                        if (ov) ov.textContent = '▶';
+                        card.classList.remove('yt-playing');
+                        const seekSlider = document.getElementById('music-seek-slider');
+                        if (seekSlider) seekSlider.value = 0;
+                        const curEl = document.getElementById('music-current-time');
+                        if (curEl) curEl.textContent = '0:00';
                     }
-                    card._ytFadingIn = true;
-                    card.classList.remove('yt-loading');
-                    card.classList.add('yt-playing');
-                    ytUpdateStatus(card);
-                    ytFadeVolume(card, 0, 100, () => { card._ytFadingIn = false; });
+                } else if (data.info === 1) {
+                    // Previsualización al pasar cursor: estado 1 = arrancando con fade
+                    if (card._ytWantPlay && !card._ytFadingIn) {
+                        if (card._ytFallbackTimer) {
+                            clearTimeout(card._ytFallbackTimer);
+                            card._ytFallbackTimer = null;
+                        }
+                        card._ytFadingIn = true;
+                        card.classList.remove('yt-loading');
+                        card.classList.add('yt-playing');
+                        ytUpdateStatus(card);
+                        ytFadeVolume(card, 0, 100, () => { card._ytFadingIn = false; });
+                    }
                 }
             }
 
             if (data.event === 'onError') {
-                if (!card._ytWantPlay) return;
+                if (!card._ytWantPlay && activeMusicCard !== card) return;
                 const code = typeof data.info === 'number' ? data.info : (data.info && data.info.errorCode) || null;
                 card._ytWantPlay = false;
                 card._ytStarted = false;
@@ -1706,6 +1882,10 @@
                 card.classList.add('yt-error');
                 card.dataset.ytError = code ? String(code) : '1';
                 ytUpdateStatus(card);
+                if (activeMusicCard === card) {
+                    const titleEl = document.getElementById('music-bar-title');
+                    if (titleEl) titleEl.textContent = '⚠️ Error al reproducir video';
+                }
             }
         }
 
@@ -1806,9 +1986,186 @@
         }
 
         function stopAllYouTubePreviews() {
+            musicClosePlayer();
             document.querySelectorAll('#read-content .yt-card').forEach(card => ytStopPreview(card));
             activeYouTubeCard = null;
             clearYouTubeFocus();
+        }
+
+        // =========================================================
+        // REPRODUCTOR DE MÚSICA (Barra inferior interactiva)
+        // =========================================================
+        function musicStartFromCard(card) {
+            if (!card) return;
+            // Desactivar lector TTS si estuviera activo para evitar colisión de audio
+            if (typeof deactivateTTS === 'function' && typeof ttsActive !== 'undefined' && ttsActive) {
+                deactivateTTS();
+            }
+
+            // Si es la misma tarjeta que ya está en modo música, alternar pausa/reproducción
+            if (activeMusicCard === card) {
+                musicTogglePlay();
+                return;
+            }
+
+            // Si había otra tarjeta sonando en la barra, detenerla primero
+            if (activeMusicCard && activeMusicCard !== card) {
+                const prevIframe = activeMusicCard.querySelector('iframe');
+                if (prevIframe) ytPostCommand(prevIframe, 'pauseVideo');
+                activeMusicCard._ytMusicMode = false;
+                activeMusicCard.classList.remove('yt-music-active', 'yt-playing');
+                const prevOv = activeMusicCard.querySelector('.yt-play-overlay');
+                if (prevOv) prevOv.textContent = '▶';
+            }
+
+            activeMusicCard = card;
+            card._ytMusicMode = true;
+            card.classList.remove('yt-error');
+            card.classList.add('yt-music-active', 'yt-playing');
+            const ov = card.querySelector('.yt-play-overlay');
+            if (ov) ov.textContent = '⏸';
+
+            // Mostrar barra de música inferior
+            const musicBar = document.getElementById('music-bar');
+            if (musicBar) musicBar.classList.remove('music-hidden');
+
+            // Actualizar datos de la barra
+            const title = card.dataset.videoTitle || card.querySelector('.yt-url')?.textContent || 'Música de YouTube';
+            const thumbSrc = card.querySelector('.yt-thumb-img')?.src || '';
+            const durationSec = parseFloat(card.dataset.ytDuration || '0');
+
+            const titleEl = document.getElementById('music-bar-title');
+            if (titleEl) {
+                titleEl.textContent = title;
+                titleEl.title = title;
+            }
+            const thumbEl = document.getElementById('music-bar-thumb');
+            if (thumbEl) thumbEl.src = thumbSrc;
+
+            const playBtn = document.getElementById('music-play-btn');
+            if (playBtn) playBtn.textContent = '⏸';
+
+            const totalEl = document.getElementById('music-total-time');
+            const seekSlider = document.getElementById('music-seek-slider');
+            const curEl = document.getElementById('music-current-time');
+            const seekVal = document.getElementById('music-seek-val');
+
+            if (curEl) curEl.textContent = '0:00';
+            if (seekVal) seekVal.textContent = '0:00';
+            if (seekSlider) {
+                seekSlider.value = 0;
+                seekSlider.max = durationSec > 0 ? String(Math.floor(durationSec)) : '100';
+            }
+            if (totalEl) totalEl.textContent = durationSec > 0 ? ytFormatTime(durationSec) : '--:--';
+
+            // Volumen según el slider de volumen
+            const volSlider = document.getElementById('music-volume-slider');
+            const currentVol = volSlider ? parseInt(volSlider.value, 10) : 100;
+
+            // Iniciar reproducción en el iframe
+            const iframe = ytEnsureIframe(card);
+            if (iframe) {
+                card._ytWantPlay = true;
+                musicIsPlaying = true;
+                ytStartHandshake(card);
+
+                const play = () => {
+                    if (activeMusicCard !== card) return;
+                    ytPostCommand(iframe, 'setVolume', [currentVol]);
+                    ytPostCommand(iframe, 'playVideo');
+                };
+
+                if (iframe.dataset.loaded === '1') {
+                    play();
+                } else {
+                    iframe.addEventListener('load', play, { once: true });
+                }
+            }
+
+            // Timer de sondeo de tiempo para mantener el slider actualizado
+            if (musicPollTimer) clearInterval(musicPollTimer);
+            musicPollTimer = setInterval(() => {
+                if (!activeMusicCard || !musicIsPlaying) return;
+                const activeIframe = activeMusicCard.querySelector('iframe');
+                if (!activeIframe || activeIframe.dataset.loaded !== '1') return;
+                ytPostPlayerMessage(activeIframe, { event: 'listening', id: 1, channel: 'widget' });
+            }, 500);
+        }
+
+        function musicTogglePlay() {
+            if (!activeMusicCard) return;
+            const iframe = activeMusicCard.querySelector('iframe');
+            if (!iframe) return;
+
+            if (musicIsPlaying) {
+                ytPostCommand(iframe, 'pauseVideo');
+                musicIsPlaying = false;
+                const playBtn = document.getElementById('music-play-btn');
+                if (playBtn) playBtn.textContent = '▶';
+                const ov = activeMusicCard.querySelector('.yt-play-overlay');
+                if (ov) ov.textContent = '▶';
+                activeMusicCard.classList.remove('yt-playing');
+            } else {
+                ytPostCommand(iframe, 'playVideo');
+                musicIsPlaying = true;
+                const playBtn = document.getElementById('music-play-btn');
+                if (playBtn) playBtn.textContent = '⏸';
+                const ov = activeMusicCard.querySelector('.yt-play-overlay');
+                if (ov) ov.textContent = '⏸';
+                activeMusicCard.classList.add('yt-playing');
+            }
+        }
+
+        function musicSeekInput(val) {
+            musicIsSeeking = true;
+            const sec = parseFloat(val);
+            const curEl = document.getElementById('music-current-time');
+            if (curEl) curEl.textContent = ytFormatTime(sec);
+            const seekVal = document.getElementById('music-seek-val');
+            if (seekVal) seekVal.textContent = ytFormatTime(sec);
+        }
+
+        function musicSeekChange(val) {
+            musicIsSeeking = false;
+            if (!activeMusicCard) return;
+            const iframe = activeMusicCard.querySelector('iframe');
+            if (iframe) {
+                ytPostCommand(iframe, 'seekTo', [parseFloat(val), true]);
+            }
+        }
+
+        function musicVolumeChange(val) {
+            const vol = parseInt(val, 10);
+            const valEl = document.getElementById('music-volume-val');
+            if (valEl) valEl.textContent = vol + '%';
+            if (!activeMusicCard) return;
+            const iframe = activeMusicCard.querySelector('iframe');
+            if (iframe) {
+                ytPostCommand(iframe, 'setVolume', [vol]);
+            }
+        }
+
+        function musicClosePlayer() {
+            if (musicPollTimer) {
+                clearInterval(musicPollTimer);
+                musicPollTimer = null;
+            }
+            if (activeMusicCard) {
+                const iframe = activeMusicCard.querySelector('iframe');
+                if (iframe) {
+                    ytPostCommand(iframe, 'pauseVideo');
+                    ytPostCommand(iframe, 'setVolume', [100]);
+                }
+                activeMusicCard._ytMusicMode = false;
+                activeMusicCard.classList.remove('yt-music-active', 'yt-playing');
+                const ov = activeMusicCard.querySelector('.yt-play-overlay');
+                if (ov) ov.textContent = '▶';
+                activeMusicCard = null;
+            }
+            musicIsPlaying = false;
+            musicIsSeeking = false;
+            const musicBar = document.getElementById('music-bar');
+            if (musicBar) musicBar.classList.add('music-hidden');
         }
 
         function ytUpdateStatus(card) {

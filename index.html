@@ -69,6 +69,42 @@
         </div>
     </div>
 
+    <!-- Barra de Música (fija al fondo, oculta por defecto) -->
+    <div id="music-bar" class="music-bar music-hidden">
+        <div class="music-bar-inner">
+            <!-- Miniatura y Título -->
+            <img id="music-bar-thumb" class="music-bar-thumb" src="" alt="Portada">
+            <div class="music-bar-info">
+                <div id="music-bar-title" class="music-bar-title" title="">Cargando música...</div>
+                <div class="music-bar-time-display">
+                    <span id="music-current-time">0:00</span> / <span id="music-total-time">0:00</span>
+                </div>
+            </div>
+
+            <!-- Botón Play/Pausa -->
+            <button id="music-play-btn" class="music-play-btn" onclick="musicTogglePlay()" title="Reproducir / Pausar">⏸</button>
+
+            <!-- Sliders: Progreso y Volumen -->
+            <div class="music-sliders">
+                <div class="music-slider-row">
+                    <span class="music-slider-label">Prog:</span>
+                    <input type="range" id="music-seek-slider" class="music-slider" min="0" max="100" value="0" step="1" oninput="musicSeekInput(this.value)" onchange="musicSeekChange(this.value)">
+                    <span id="music-seek-val" class="music-slider-val">0:00</span>
+                </div>
+                <div class="music-slider-row">
+                    <span class="music-slider-label">Vol:</span>
+                    <input type="range" id="music-volume-slider" class="music-slider" min="0" max="100" value="100" step="1" oninput="musicVolumeChange(this.value)">
+                    <span id="music-volume-val" class="music-slider-val">100%</span>
+                </div>
+            </div>
+
+            <!-- Botón Cerrar -->
+            <div class="music-right-btns">
+                <button class="music-close-btn" onclick="musicClosePlayer()" title="Cerrar reproductor">✕</button>
+            </div>
+        </div>
+    </div>
+
     <div id="view-edit" class="view">
         <nav style="margin-bottom: 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
             <div style="display: flex; gap: 10px;">
