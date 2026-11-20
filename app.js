@@ -1732,14 +1732,14 @@
         }
 
         function ytTryStartPlayback(card) {
-            if (!card || !card._ytWantPlay || card._ytStarted) return;
+            if (!card || !card._ytWantPlay || card._ytStarted || card._ytMusicMode || (activeMusicCard && activeMusicCard !== card)) return;
             const duration = parseFloat(card.dataset.ytDuration || '0');
             if (!Number.isFinite(duration) || duration <= 0) return;
             const iframe = card.querySelector('iframe');
             if (!iframe) return;
 
             card._ytStarted = true;
-            const startTime = 0;
+            const startTime = duration < 45 ? 0 : 30;
             card._ytStartTime = startTime;
 
             if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
@@ -1749,7 +1749,7 @@
             ytPostCommand(iframe, 'setVolume', [0]);
 
             const play = () => {
-                if (!card._ytWantPlay) return;
+                if (!card._ytWantPlay || card._ytMusicMode || (activeMusicCard && activeMusicCard !== card)) return;
                 ytPostCommand(iframe, 'playVideo');
             };
             card._ytStartTimers = [
@@ -1763,14 +1763,14 @@
             if (card._ytFallbackTimer) clearTimeout(card._ytFallbackTimer);
             card._ytFallbackTimer = setTimeout(() => {
                 card._ytFallbackTimer = null;
-                if (card._ytWantPlay && !card._ytFadingIn) {
+                if (card._ytWantPlay && !card._ytFadingIn && !card._ytMusicMode && (!activeMusicCard || activeMusicCard === card)) {
                     card._ytFadingIn = true;
                     card.classList.remove('yt-loading');
                     card.classList.add('yt-playing');
                     ytUpdateStatus(card);
                     ytFadeVolume(card, 0, 100, () => { card._ytFadingIn = false; });
                 }
-            }, 850); // 150ms primer play + 700ms margen de buffering
+            }, 850);
         }
 
         function ytHandlePlayerMessage(e) {
@@ -1925,7 +1925,7 @@
         }
 
         function ytPlayPreview(card) {
-            if (!card) return;
+            if (!card || activeMusicCard) return;
             if (activeYouTubeCard && activeYouTubeCard !== card) ytStopPreview(activeYouTubeCard);
             activeYouTubeCard = card;
 
@@ -1985,10 +1985,62 @@
             }
         }
 
+        // Detiene, silencia y cancela todos los timers de cualquier tarjeta que no sea exceptCard
+        function silenceAllYouTubeCards(exceptCard = null) {
+            document.querySelectorAll('#read-content .yt-card').forEach(c => {
+                if (c === exceptCard) return;
+
+                // 1. Cancelar cualquier timer pendiente
+                if (c._ytStartTimers) {
+                    c._ytStartTimers.forEach(clearTimeout);
+                    c._ytStartTimers = [];
+                }
+                if (c._ytFallbackTimer) {
+                    clearTimeout(c._ytFallbackTimer);
+                    c._ytFallbackTimer = null;
+                }
+                if (c._ytFadeTimer) {
+                    clearInterval(c._ytFadeTimer);
+                    c._ytFadeTimer = null;
+                }
+                ytStopHandshake(c);
+
+                // 2. Desvincular handler de carga si estaba en espera
+                const iframe = c.querySelector('iframe');
+                if (iframe && c._ytMusicPlayHandler) {
+                    iframe.removeEventListener('load', c._ytMusicPlayHandler);
+                    c._ytMusicPlayHandler = null;
+                }
+
+                // 3. Desactivar banderas de reproducción y restaurar inicio de muestra a 30s
+                c._ytWantPlay = false;
+                c._ytStarted = false;
+                c._ytFadingIn = false;
+                c._ytMusicMode = false;
+                const d = parseFloat(c.dataset.ytDuration || '0');
+                c._ytStartTime = (d > 0 && d < 45) ? 0 : 30;
+
+                // 4. Pausar y enmudecer el reproductor si existe
+                if (iframe) {
+                    ytPostCommand(iframe, 'pauseVideo');
+                    ytPostCommand(iframe, 'setVolume', [0]);
+                }
+
+                // 5. Limpiar estados visuales
+                c.classList.remove('yt-music-active', 'yt-playing', 'yt-loading');
+                const ov = c.querySelector('.yt-play-overlay');
+                if (ov) ov.textContent = '▶';
+                ytUpdateStatus(c);
+            });
+
+            if (activeYouTubeCard && activeYouTubeCard !== exceptCard) {
+                activeYouTubeCard = null;
+            }
+        }
+
         function stopAllYouTubePreviews() {
             musicClosePlayer();
-            document.querySelectorAll('#read-content .yt-card').forEach(card => ytStopPreview(card));
-            activeYouTubeCard = null;
+            silenceAllYouTubeCards(null);
             clearYouTubeFocus();
         }
 
@@ -2023,15 +2075,8 @@
                 return;
             }
 
-            // Si había otra tarjeta sonando en la barra, detenerla primero
-            if (activeMusicCard && activeMusicCard !== card) {
-                const prevIframe = activeMusicCard.querySelector('iframe');
-                if (prevIframe) ytPostCommand(prevIframe, 'pauseVideo');
-                activeMusicCard._ytMusicMode = false;
-                activeMusicCard.classList.remove('yt-music-active', 'yt-playing');
-                const prevOv = activeMusicCard.querySelector('.yt-play-overlay');
-                if (prevOv) prevOv.textContent = '▶';
-            }
+            // COMPROBACIÓN TOTAL: Silenciar y detener absolutamente todo audio previo en ejecución
+            silenceAllYouTubeCards(card);
 
             activeMusicCard = card;
             card._ytMusicMode = true;
@@ -2078,18 +2123,23 @@
             const currentVol = volSlider ? parseInt(volSlider.value, 10) : 100;
 
             // Iniciar reproducción en el iframe asegurando que arranque desde el segundo 0
+            card._ytStartTime = 0;
             const iframe = ytEnsureIframe(card);
             if (iframe) {
+                // Rebobinar a 0 de inmediato si venía de estar en previsualización
+                ytPostCommand(iframe, 'seekTo', [0, true]);
                 card._ytWantPlay = true;
                 musicIsPlaying = true;
                 ytStartHandshake(card);
 
                 const play = () => {
-                    if (activeMusicCard !== card) return;
+                    if (activeMusicCard !== card || !card._ytWantPlay || !card._ytMusicMode) return;
                     ytPostCommand(iframe, 'seekTo', [0, true]);
                     ytPostCommand(iframe, 'setVolume', [currentVol]);
                     ytPostCommand(iframe, 'playVideo');
                 };
+
+                card._ytMusicPlayHandler = play;
 
                 if (iframe.dataset.loaded === '1') {
                     play();
@@ -2167,18 +2217,8 @@
                 clearInterval(musicPollTimer);
                 musicPollTimer = null;
             }
-            if (activeMusicCard) {
-                const iframe = activeMusicCard.querySelector('iframe');
-                if (iframe) {
-                    ytPostCommand(iframe, 'pauseVideo');
-                    ytPostCommand(iframe, 'setVolume', [100]);
-                }
-                activeMusicCard._ytMusicMode = false;
-                activeMusicCard.classList.remove('yt-music-active', 'yt-playing');
-                const ov = activeMusicCard.querySelector('.yt-play-overlay');
-                if (ov) ov.textContent = '▶';
-                activeMusicCard = null;
-            }
+            silenceAllYouTubeCards(null);
+            activeMusicCard = null;
             musicIsPlaying = false;
             musicIsSeeking = false;
             const musicBar = document.getElementById('music-bar');
