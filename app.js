@@ -1739,7 +1739,7 @@
             if (!iframe) return;
 
             card._ytStarted = true;
-            const startTime = duration < 45 ? 0 : 30;
+            const startTime = 0;
             card._ytStartTime = startTime;
 
             if (card._ytStartTimers) card._ytStartTimers.forEach(clearTimeout);
@@ -1995,8 +1995,23 @@
         // =========================================================
         // REPRODUCTOR DE MÚSICA (Barra inferior interactiva)
         // =========================================================
+        const ytClickAudio = new Audio('CLICK SOUND.mp3');
+
+        function playClickSound() {
+            try {
+                ytClickAudio.currentTime = 0;
+                ytClickAudio.play().catch(() => {
+                    const fallbackAudio = new Audio('CLICK SOUND.mp3');
+                    fallbackAudio.play().catch(() => {});
+                });
+            } catch (e) {}
+        }
+
         function musicStartFromCard(card) {
             if (!card) return;
+            // Efecto de sonido inmediato al dar clic
+            playClickSound();
+
             // Desactivar lector TTS si estuviera activo para evitar colisión de audio
             if (typeof deactivateTTS === 'function' && typeof ttsActive !== 'undefined' && ttsActive) {
                 deactivateTTS();
@@ -2062,7 +2077,7 @@
             const volSlider = document.getElementById('music-volume-slider');
             const currentVol = volSlider ? parseInt(volSlider.value, 10) : 100;
 
-            // Iniciar reproducción en el iframe
+            // Iniciar reproducción en el iframe asegurando que arranque desde el segundo 0
             const iframe = ytEnsureIframe(card);
             if (iframe) {
                 card._ytWantPlay = true;
@@ -2071,6 +2086,7 @@
 
                 const play = () => {
                     if (activeMusicCard !== card) return;
+                    ytPostCommand(iframe, 'seekTo', [0, true]);
                     ytPostCommand(iframe, 'setVolume', [currentVol]);
                     ytPostCommand(iframe, 'playVideo');
                 };
@@ -2094,6 +2110,7 @@
 
         function musicTogglePlay() {
             if (!activeMusicCard) return;
+            playClickSound();
             const iframe = activeMusicCard.querySelector('iframe');
             if (!iframe) return;
 
